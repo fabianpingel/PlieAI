@@ -4,7 +4,7 @@ from webcam import webcam_input
 def main():
     
     # Sidebar
-    st.sidebar.image('src/sinicawingen.png', use_column_width=True)
+    st.sidebar.image('src/logo.png', use_column_width=True)
     st.sidebar.header('Posen')
     pose = st.sidebar.selectbox(
     'Welche Position möchtest Du üben?',
