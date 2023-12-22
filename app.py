@@ -5,11 +5,11 @@ def main():
     
     # Sidebar
     st.sidebar.image('src/logo.png', use_column_width=True)
-    st.sidebar.header('Posen')
+    st.sidebar.header('Ballettposen')
     pose = st.sidebar.selectbox(
     'Welche Position möchtest Du üben?',
     ('1.Position', '1.Position', '3.Position', '4.Position', '5.Position'))
-    st.sidebar.write('Auswahl:', pose)
+    st.sidebar.info(f'Auswahl: {pose}')
      
     # Hauptfenster
     st.title("🩰 Plié AI 🪞")
