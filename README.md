@@ -24,4 +24,7 @@ streamlit run app.py
 
 or double click on: `start_streamlit.bat` (if your venv is not yet activated)
 
+## Code
+
+Pose Estimation Code based on [mediapipe](https://developers.google.com/mediapipe/solutions/vision/pose_landmarker/python)
 
