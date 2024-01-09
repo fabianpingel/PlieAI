@@ -8,7 +8,6 @@ from PIL import Image
 import av
 
 import time
-
 import cv2
 import numpy as np
 
@@ -26,21 +25,23 @@ mp_pose = mp.solutions.pose
 mp_drawing = mp.solutions.drawing_utils
 mp_drawing_styles = mp.solutions.drawing_styles
 
-BaseOptions = mp.tasks.BaseOptions
-PoseLandmarker = mp.tasks.vision.PoseLandmarker
-PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
-#PoseLandmarkerResult = mp.tasks.vision.PoseLandmarkerResult
-VisionRunningMode = mp.tasks.vision.RunningMode
-
-# Create a pose landmarker instance with the live stream mode:
-#def print_result(result: PoseLandmarkerResult, output_image: mp.Image, timestamp_ms: int):
-    #print('pose landmarker result: {}'.format(result))
-#    return result
-
-options = PoseLandmarkerOptions(base_options=BaseOptions(model_asset_path=model_path),
+@st.cache_resource(show_spinner="Lade Modell...")
+def load_landmarker():
+    BaseOptions = mp.tasks.BaseOptions
+    PoseLandmarker = mp.tasks.vision.PoseLandmarker
+    PoseLandmarkerOptions = mp.tasks.vision.PoseLandmarkerOptions
+    #PoseLandmarkerResult = mp.tasks.vision.PoseLandmarkerResult
+    VisionRunningMode = mp.tasks.vision.RunningMode
+    
+    options = PoseLandmarkerOptions(base_options=BaseOptions(model_asset_path=model_path),
                                 #running_mode=VisionRunningMode.IMAGE)
                                 running_mode=VisionRunningMode.VIDEO)#,
-#                                result_callback=print_result)
+                                #result_callback=print_result)
+
+    return PoseLandmarker.create_from_options(options)
+
+# Landmarker initialisieren
+landmarker = load_landmarker()
 
 
 ##################
@@ -58,25 +59,25 @@ def process(image):
     mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb_image)
     
     # Perform pose landmarking on the provided single image.
-    with PoseLandmarker.create_from_options(options) as landmarker:
-        #pose_landmarker_result = landmarker.detect(mp_image) # The pose landmarker must be created with the image mode.
-        pose_landmarker_result = landmarker.detect_for_video(mp_image, time.time_ns() // 1_000_000) # The pose landmarker must be created with the video mode.
-        # Send live image data to perform pose landmarking. The results are accessible via the 'result_callback' provided in the 'PoseLandmarkerOptions' object.
-        #pose_landmarker_result = landmarker.detect_async(mp_image, time.time_ns() // 1_000_000) # The pose landmarker must be created with the live stream mode.
+    #with PoseLandmarker.create_from_options(options) as landmarker:
+    #pose_landmarker_result = landmarker.detect(mp_image) # The pose landmarker must be created with the image mode.
+    pose_landmarker_result = landmarker.detect_for_video(mp_image, time.time_ns() // 1_000_000) # The pose landmarker must be created with the video mode.
+    # Send live image data to perform pose landmarking. The results are accessible via the 'result_callback' provided in the 'PoseLandmarkerOptions' object.
+    #pose_landmarker_result = landmarker.detect_async(mp_image, time.time_ns() // 1_000_000) # The pose landmarker must be created with the live stream mode.
 
-        # Clone Image
-        current_frame = image
-        
-        # Visualize the detection result
-        if pose_landmarker_result:
-            # Draw landmarks
-            for pose_landmarks in pose_landmarker_result.pose_landmarks:
-                pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
-                pose_landmarks_proto.landmark.extend([landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks])
-                mp_drawing.draw_landmarks(current_frame,
-                                          pose_landmarks_proto,
-                                          mp_pose.POSE_CONNECTIONS,
-                                          mp_drawing_styles.get_default_pose_landmarks_style())              
+    # Clone Image
+    current_frame = image
+    
+    # Visualize the detection result
+    if pose_landmarker_result:
+        # Draw landmarks
+        for pose_landmarks in pose_landmarker_result.pose_landmarks:
+            pose_landmarks_proto = landmark_pb2.NormalizedLandmarkList()
+            pose_landmarks_proto.landmark.extend([landmark_pb2.NormalizedLandmark(x=landmark.x, y=landmark.y, z=landmark.z) for landmark in pose_landmarks])
+            mp_drawing.draw_landmarks(current_frame,
+                                      pose_landmarks_proto,
+                                      mp_pose.POSE_CONNECTIONS,
+                                      mp_drawing_styles.get_default_pose_landmarks_style())              
     
     return current_frame
 
