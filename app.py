@@ -12,7 +12,7 @@ def main():
     st.sidebar.info(f'Auswahl: {pose}')
      
     # Hauptfenster
-    st.title("🩰 Plié AI 🪞")
+    st.title("🩰 Plié AI")
     st.subheader("Pose Learning and Improvement Excercises with AI")
     # Webcam
     webcam_input()
