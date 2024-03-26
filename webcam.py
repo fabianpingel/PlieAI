@@ -3,6 +3,7 @@
 ###############
 import streamlit as st
 from streamlit_webrtc import webrtc_streamer
+from utils.turn import get_ice_servers
 
 from PIL import Image
 import av
@@ -109,7 +110,8 @@ def webcam_input():
     webrtc_ctx = webrtc_streamer(
         key="neural-style-transfer",
         video_frame_callback=video_frame_callback,
-        rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}],
+        #rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}],
+        rtc_configuration={"iceServers": get_ice_servers()},                 
         media_stream_constraints={"video": True, "audio": False},
         async_processing=True,
     )
