@@ -1,18 +1,6 @@
 import streamlit as st
 from modules.cam import WebcamInput
 
-#
-if "exercise_type" not in st.session_state:
-    st.session_state.exercise_type = None
-if "pose" not in st.session_state:
-    st.session_state.pose = None
-if "dynamic" not in st.session_state:
-    st.session_state.dynamic = None
-if "show_keypoints" not in st.session_state:
-    st.session_state.show_keypoints = True
-
-
-
 def main():
     # Sidebar
     with st.sidebar:
@@ -37,7 +25,7 @@ def main():
             st.info(f'Auswahl: {st.session_state.dynamic}')
 
         # Toggle für Keypoints
-        st.toggle('Keypoints anzeigen', key='show_keypoints')
+        st.toggle('Keypoints anzeigen', value=True, key='show_keypoints')
 
     # Hauptfenster
     st.title("🩰 Plié AI")
