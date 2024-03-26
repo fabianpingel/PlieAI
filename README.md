@@ -1,4 +1,6 @@
-# 🩰 Plié AI 🪞 -  Ballet Pose Learning and Improvement with AI
+# 🩰 Plié AI -  Ballet Pose Learning and Improvement with AI
+
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://plieai.streamlit.app/)
 
 ## Installation
 1. Clone this repo:
