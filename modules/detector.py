@@ -13,7 +13,7 @@ import time
 
 
 class PoseDetector:
-    def __init__(self, model_path: str = './models/pose_landmarker_full.task') -> None:
+    def __init__(self, model_path: str = './models/pose_landmarker_lite.task') -> None:
         """
         Initialisiert den PoseDetector.
 
