@@ -211,7 +211,7 @@ class PoseClassifier:
 
             # Trainer aktualisieren
             self.pose_trainer.update(pose_class)
-            print(self.pose_trainer.num_repeats)
+            #print(self.pose_trainer.num_repeats)
 
             output_frame2 = self.pose_trainer.show_progress(output_frame)
 
