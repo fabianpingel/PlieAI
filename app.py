@@ -1,6 +1,7 @@
 import streamlit as st
 from modules.cam import WebcamInput
 
+
 def main():
     # Sidebar
     with st.sidebar:
@@ -14,13 +15,13 @@ def main():
         # statische Übungen
         if st.session_state.exercise_type == "Statische Posen":
             st.selectbox('Welche Position möchtest Du üben?',
-                         ('1. Position', '2. Position', '3. Position'),
+                         ('Schere', 'Stein', 'Papier'),
                          key='pose')
             st.info(f'Auswahl: {st.session_state.pose}')
         # Dynamische Übungen
         else:
             st.selectbox('Welche Bewegungen möchtest Du üben?',
-                         ('1. Bewegung', '2. Bewegung', '3. Bewegung'),
+                         ('Schere - Stein', 'Stein - Papier', 'Schere - Papier'),
                          key='dynamic')
             st.info(f'Auswahl: {st.session_state.dynamic}')
 
@@ -30,6 +31,7 @@ def main():
     # Hauptfenster
     st.title("🩰 Plié AI")
     st.subheader("Pose Learning and Improvement Exercises with AI")
+    st.markdown("Demo - Übungen nur für die rechte Hand :hand: ")
 
     # Webcam-Input
     input_handler = WebcamInput()
