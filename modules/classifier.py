@@ -3,7 +3,7 @@ import pickle
 import pandas as pd
 import numpy as np
 import cv2
-from tqdm import tqdm
+#from tqdm import tqdm
 import streamlit as st
 
 from sklearn.datasets import load_iris
