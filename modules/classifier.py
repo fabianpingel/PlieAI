@@ -39,6 +39,7 @@ class PoseClassifier:
         self.model = self._load_model(model)
         self.trained_poses = self.model.classes_ if self.model is not None else None
         self.metrics = {}
+        self.columns = self.create_feature_names()
 
         self.pose_trainer = Trainer() # Trainer initialisieren
 
@@ -62,6 +63,18 @@ class PoseClassifier:
             print(f"Fehler beim Laden des Modells: {e}")
             return None
 
+    def create_feature_names(self):
+        columns = []
+        for idx in range(21):
+            columns += [
+                f'x{idx}',  # "x": pose_landmark.x
+                f'y{idx}',  # "y": pose_landmark.y
+                f'z{idx}',  # "z": pose_landmark.z
+                # f'v{val}',  # "visibility": pose_landmark.visibility,
+                # 'p{}'.format(val)   # "presence": pose_landmark.presence
+            ]
+        return columns
+        
 
     def transform_data(self, results, height, width):
         """
@@ -84,7 +97,9 @@ class PoseClassifier:
 
         landmarks = np.around(rh, 6).flatten().tolist()
 
-        return pd.DataFrame([landmarks])
+        
+
+        return pd.DataFrame([landmarks], columns=self.columns)
 
 
     def predict(self, X):
