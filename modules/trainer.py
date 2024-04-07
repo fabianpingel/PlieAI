@@ -96,8 +96,8 @@ class Trainer:
         img_height, img_width = frame.shape[:2]
         #if self.check_pose(pred_pose):
         progress = min(img_width, int(img_width / 10) * self.num_repeats)
-        print(progress)
-        print(type(progress))
+        #print(progress)
+        #print(type(progress))
         cv2.rectangle(output_frame, (0, 405), (max(1,progress), 420), (0, 255, 0), -1)
 
         # Wenn Übung beendet zeige Erfolgsmeldung
