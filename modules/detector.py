@@ -13,7 +13,7 @@ import time
 
 
 class PoseDetector:
-    def __init__(self, model_path: str = './models/pose_landmarker_lite.task') -> None:
+    def __init__(self, model_path: str = r'D:\PlieAI\models\pose_landmarker_lite.task') -> None:
         """
         Initialisiert den PoseDetector.
 
@@ -21,6 +21,7 @@ class PoseDetector:
             model_path (str, optional): Der Dateipfad zum Pose-Landmarker-Modell. Defaults to './models/pose_landmarker_full.task'.
         """
         self.model_path = model_path
+        st.write(self.model_path)
         self.landmarker = self._load_landmarker()
         self.draw_keypoints = st.session_state.show_keypoints
 
