@@ -176,18 +176,10 @@ class PoseClassifier:
         Returns:
             numpy.ndarray: Das Ausgabebild mit visualisierten Wahrscheinlichkeiten und Posen.
         """
-        # Bildgröße
-        height, width = image.shape[:2]
-
-        # Bild kopieren
-        image_in = image.copy()
-
-        #print(results.right_hand_landmarks)
-
-        # Wenn rechte Hand erkennbar...
+        # Wenn rechte Hand erkannt...
         if results.right_hand_landmarks:
             # Transform Data
-            X = self.transform_data(results, height, width)
+            X = self.transform_data(results, *image.shape[:2])
 
             # Predict
             pose_class, pose_prob = self.predict(X)
@@ -197,7 +189,7 @@ class PoseClassifier:
             #image_in = cv2.flip(image, 1)
 
             # Klasse anzeigen
-            output_frame = self.show_pose_classification(pose_prob, self.trained_poses, image_in)
+            output_frame = self.show_pose_classification(pose_prob, self.trained_poses, image)
 
             # Trainer aktualisieren
             self.pose_trainer.update(pose_class)
@@ -207,7 +199,7 @@ class PoseClassifier:
 
             return output_frame_res
 
-        return image
+        return image # Originalbild zurückgeben, wenn keine Landmarks erkannt
 
 
 
