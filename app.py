@@ -28,12 +28,13 @@ def main():
             st.info(f'Auswahl: {st.session_state.dynamic}')
 
         # Toggle für Anzeige der Landmarks
-        with st.expander("Anzeige Einstellungen"):
+        with st.expander("Einstellungen"):
             st.toggle("Face Landmarks", value=True, key='face_landmarks')
             st.toggle("Hand Landmarks", value=True, key='hand_landmarks')
             st.toggle("Pose Landmarks", value=True, key='pose_landmarks')
             st.checkbox("3D Pose Landmarks", value=False,
                         key='plot_3d_landmarks')  # Toggle sorgt für Flimmern der Streamlit-Oberfläche
+            st.select_slider('Bildqualität', options=list(range(50, 201, 50)), value=100, key='image_size')
 
     # Hauptfenster
     st.title("🩰 Plié AI")
