@@ -1,23 +1,10 @@
 import os
 import pickle
-import pandas as pd
+import pandas as pd ###
 import numpy as np
 import cv2
-#from tqdm import tqdm
 import streamlit as st
-
-from sklearn.datasets import load_iris
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.svm import SVC
-from sklearn.tree import DecisionTreeClassifier
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
-from sklearn.naive_bayes import GaussianNB
-from sklearn.neural_network import MLPClassifier
-from sklearn.metrics import accuracy_score
-from sklearn.linear_model import LogisticRegression, RidgeClassifier
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import logging
 
 from modules.trainer import Trainer
 
@@ -36,32 +23,36 @@ class PoseClassifier:
         """
         # Laden des Modells bei Initialisierung der Klasse
         self.model_path = os.path.join(os.getcwd(), 'classifiers')
-        self.model = self._load_model(model)
-        self.trained_poses = self.model.classes_ if self.model is not None else None
-        self.metrics = {}
+        self.model = None
+        self.trained_poses = None
         self.columns = self.create_feature_names()
 
-        self.pose_trainer = Trainer() # Trainer initialisieren
+        # Trainer initialisieren
+        self.pose_trainer = Trainer()
+
+        # Logging
+        self.logger = logging.getLogger(__name__)
+
+        # Modell laden
+        self.load_model(model)
 
 
-    def _load_model(self, name):
+    def load_model(self, name):
         """
         Laden des Modells aus einer Datei mit pickle.
 
         Args:
             name (str): Der Name der Datei, in der das Modell gespeichert ist.
-
-        Returns:
-            object: Das geladene Modell.
         """
         try:
             with open(os.path.join(self.model_path, name), 'rb') as file:
-                model = pickle.load(file)
-            print("Modell erfolgreich geladen.")
-            return model
+                self.model = pickle.load(file)
+            self.trained_poses = self.model.classes_ if self.model is not None else None
+            self.logger.info("Modell erfolgreich geladen.")
         except Exception as e:
-            print(f"Fehler beim Laden des Modells: {e}")
-            return None
+            self.logger.error(f"Fehler beim Laden des Modells: {e}")
+
+
 
     def create_feature_names(self):
         columns = []
@@ -74,7 +65,7 @@ class PoseClassifier:
                 # 'p{}'.format(val)   # "presence": pose_landmark.presence
             ]
         return columns
-        
+
 
     def transform_data(self, results, height, width):
         """
@@ -89,17 +80,19 @@ class PoseClassifier:
             pd.DataFrame: Ein DataFrame mit den transformierten Daten.
         """
         # Extract Keypoints:
-        rh = np.array([[res.x, res.y, res.z] for res in
-                       results.right_hand_landmarks.landmark]) if results.right_hand_landmarks else np.zeros(
-            21 * 3).reshape(-1, 3)
+        rh = np.zeros((21, 3))
+        if results.right_hand_landmarks:
+            rh = np.array([[res.x, res.y, res.z] for res in results.right_hand_landmarks.landmark])
+        #rh = np.array([[res.x, res.y, res.z] for res in
+        #               results.right_hand_landmarks.landmark]) if results.right_hand_landmarks else np.zeros(
+        #    21 * 3).reshape(-1, 3)
 
         rh *= np.array([width, height, width])
 
         landmarks = np.around(rh, 6).flatten().tolist()
 
-        
-
         return pd.DataFrame([landmarks], columns=self.columns)
+
 
 
     def predict(self, X):
@@ -118,29 +111,11 @@ class PoseClassifier:
                 pose_prob = self.model.predict_proba(X)[0]
                 return pose_class, pose_prob
             except Exception as e:
-                print(f"Fehler bei der Vorhersage: {e}")
+                self.logger.error(f"Fehler bei der Vorhersage: {e}")
         else:
-            print("Kein Modell geladen, Vorhersage nicht möglich.")
+            self.logger.error("Kein Modell geladen, Vorhersage nicht möglich.")
             return None
 
-
-    def evaluate(self, y_true, y_pred):
-        """
-        Evaluates a multiclass classifier using various metrics.
-
-        Args:
-            y_true (array-like): True labels.
-            y_pred (array-like): Predicted labels.
-
-        Returns:
-            dict: Dictionary containing evaluated metrics.
-        """
-        self.metrics['Accuracy'] = accuracy_score(y_true, y_pred)
-        self.metrics['Precision'] = precision_score(y_true, y_pred, average='weighted')
-        self.metrics['Recall'] = recall_score(y_true, y_pred, average='weighted')
-        self.metrics['F1 Score'] = f1_score(y_true, y_pred, average='weighted')
-        self.metrics['Confusion Matrix'] = confusion_matrix(y_true, y_pred)
-        return self.metrics
 
 
     @staticmethod
@@ -228,49 +203,25 @@ class PoseClassifier:
             self.pose_trainer.update(pose_class)
             #print(self.pose_trainer.num_repeats)
 
-            output_frame2 = self.pose_trainer.show_progress(output_frame)
+            output_frame_res = self.pose_trainer.show_progress(output_frame)
 
-            return output_frame2
+            return output_frame_res
 
         return image
 
 
 
-    def train(self, X_train, y_train, X_test, y_test):
+    def close(self):
         """
-        Trainiert den Pose-Classifier mit den übergebenen Trainingsdaten.
-
-        Args:
-            X_train (array-like): Die Trainingsdaten.
-            y_train (array-like): Die Trainingslabels.
-            X_test (array-like): Die Testdaten.
-            y_test (array-like): Die Testlabels.
+        Schließt das Modell und gibt Ressourcen frei.
         """
+        if self.model:
+            if hasattr(self.model, 'close') and callable(getattr(self.model, 'close')):
+                self.model.close()
+            else:
+                self.model = None
+            self.logger.info("Modell geschlossen.")
+        else:
+            self.logger.error("Kein Modell geladen.")
 
-        classifiers = {
-            "k-Nearest Neighbors": KNeighborsClassifier(),
-            "Support Vector Machine": SVC(),
-            "Decision Tree": DecisionTreeClassifier(),
-            "Random Forest": RandomForestClassifier(),
-            "Naive Bayes": GaussianNB(),
-            "Gradient Boosting": GradientBoostingClassifier(),
-            "Neural Network": MLPClassifier(),
-            "Logistic Regression": LogisticRegression(),
-            "RidgeClassifier": RidgeClassifier(),
-        }
 
-        self.results = {}
-        for name, clf in tqdm(classifiers.items()):
-            clf_pipeline = Pipeline(steps=[
-                # ('scaler', StandardScaler()), Kommentiert, falls Skalierung nicht gewünscht
-                ('classifier', clf)
-            ])
-            clf_pipeline.fit(X_train, y_train)
-            y_pred = clf_pipeline.predict(X_test)
-            self.metrics = self.evaluate(y_test, y_pred)  # Verwende die interne evaluate Methode
-            self.results[name] = metrics
-
-        # Ausgabe der Ergebnisse
-        print("\nAccuracy results:")
-        for name, metrics in self.results.items():
-            print(f"{name}: \n {metrics}")
