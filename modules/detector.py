@@ -83,15 +83,10 @@ class PoseDetector:
         """
 
         # Konvertiere das Bild von BGR zu RGB, da MediaPipe in RGB arbeitet.
-        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        image.flags.writeable = False  # Verbessert Performance durch Verhindern von Kopien
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Verarbeite das Bild mit dem Holistic-Modell
-        results = self.model.process(image)
-
-        # Konvertiere das Bild zurück zu BGR für die Anzeige
-        image.flags.writeable = True
-        image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+        results = self.model.process(image_rgb)
 
         # Zeichne Landmarks im Bild, wenn aktiviert und vorhanden
         self._draw_keypoints(image, results)
