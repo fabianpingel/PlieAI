@@ -59,7 +59,7 @@ class Trainer:
                                                             threshold=0.5)
         self.success = False
         self.num_repeats=0
-        self.fps = 20
+        self.fps = 10
         self.count = 0
 
 
@@ -78,7 +78,7 @@ class Trainer:
             if pred_pose in [self.initial_pose, self.target_pose]:
                 self.count = self.transition_counter(pred_pose)
                 self.num_repeats = int(self.count // 2)
-                print("Anzahl der Wechsel:", self.num_repeats)
+                #print("Anzahl der Wechsel:", self.num_repeats)
 
 
     #@staticmethod
