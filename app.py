@@ -1,10 +1,12 @@
 import streamlit as st
+
 from modules.cam import WebcamInput
 
 
 def main():
     # Sidebar
     with st.sidebar:
+        # Logo
         st.image('src/logo.png', use_column_width=True)
 
         # Auswahl der Übungsart
@@ -18,15 +20,18 @@ def main():
                          ('Schere', 'Stein', 'Papier'),
                          key='pose')
             st.info(f'Auswahl: {st.session_state.pose}')
-        # Dynamische Übungen
+        # dynamische Übungen
         else:
             st.selectbox('Welche Bewegungen möchtest Du üben?',
                          ('Schere - Stein', 'Stein - Papier', 'Schere - Papier'),
                          key='dynamic')
             st.info(f'Auswahl: {st.session_state.dynamic}')
 
-        # Toggle für Keypoints
-        st.toggle('Keypoints anzeigen', value=True, key='show_keypoints')
+        # Toggle für Anzeige der Landmarks
+        with st.expander("Anzeige Einstellungen"):
+            st.toggle("Face Landmarks", value=True, key='face_landmarks')
+            st.toggle("Hand Landmarks", value=True, key='hand_landmarks')
+            st.toggle("Pose Landmarks", value=True, key='pose_landmarks')
 
     # Hauptfenster
     st.title("🩰 Plié AI")
