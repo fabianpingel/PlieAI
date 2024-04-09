@@ -4,6 +4,10 @@ from modules.cam import WebcamInput
 
 
 def main():
+    # Anzeige in der Browser-Registerkarte
+    st.set_page_config(page_title="Plié AI",
+                       page_icon="🩰")
+    
     # Sidebar
     with st.sidebar:
         # Logo
