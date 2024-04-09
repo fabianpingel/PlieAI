@@ -32,6 +32,8 @@ def main():
             st.toggle("Face Landmarks", value=True, key='face_landmarks')
             st.toggle("Hand Landmarks", value=True, key='hand_landmarks')
             st.toggle("Pose Landmarks", value=True, key='pose_landmarks')
+            st.checkbox("3D Pose Landmarks", value=False,
+                        key='plot_3d_landmarks')  # Toggle sorgt für Flimmern der Streamlit-Oberfläche
 
     # Hauptfenster
     st.title("🩰 Plié AI")
