@@ -1,7 +1,7 @@
 # Imports
 import av                                       # für die Verarbeitung von Audio- und Videodaten
 import streamlit as st                          # für die Erstellung der Streamlit-App
-from streamlit_webrtc import webrtc_streamer    # für WebRTC-Streams in Streamlit
+from streamlit_webrtc import WebRtcMode, webrtc_streamer    # für WebRTC-Streams in Streamlit
 from modules.detector import PoseDetector       # `PoseDetector`-Klasse für die Pose-Erkennung
 from utils.turn import get_ice_servers          # Funktion 'get_ice_servers' aus dem Modul 'utils.turn'
 import cv2                                      # OpenCV für die Bildverarbeitung
@@ -71,6 +71,7 @@ class WebcamInput:
         """
         webrtc_ctx = webrtc_streamer(
             key="pose_detection",
+            mode=WebRtcMode.SENDRECV,
             rtc_configuration={"iceServers": get_ice_servers()},
             video_frame_callback=self.video_frame_callback,
             media_stream_constraints={"video": True, "audio": False},
