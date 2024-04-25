@@ -74,7 +74,12 @@ class WebcamInput:
             mode=WebRtcMode.SENDRECV,
             rtc_configuration={"iceServers": get_ice_servers()},
             video_frame_callback=self.video_frame_callback,
-            media_stream_constraints={"video": True, "audio": False},
+            #media_stream_constraints={"video": True, "audio": False},
+            media_stream_constraints={"video": {
+                                            "width": {"exact": 1280},
+                                            "height": {"exact": 720},
+                                            "frameRate": {"ideal": 30}},
+                                      "audio": False},
             async_processing=True,
         )
 
