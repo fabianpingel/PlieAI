@@ -91,6 +91,10 @@ class PoseDetector:
         # Zeichne Landmarks im Bild, wenn aktiviert und vorhanden
         self._draw_keypoints(image, results)
 
+        # Debugging Bildformat mobiles Endgerät bestimmen
+        bildformat = str(image.shape)
+        cv2.putText(image, bildformat, (200, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA)
+
         # Erstelle den 3D-Plot der Landmarks, wenn aktiviert
         if self.plot_3d_landmarks:
             image = self._plot_landmarks_3d(results)
