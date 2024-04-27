@@ -51,8 +51,10 @@ class Trainer:
             self.target_pose = st.session_state.pose
             #st.write(st.session_state.pose)
         else:
-            self.initial_pose = st.session_state.dynamic.split(' - ')[0]
-            self.target_pose = st.session_state.dynamic.split(' - ')[1]
+            self.initial_pose = st.session_state.dynamic
+            self.target_pose = st.session_state.dynamic
+            #self.initial_pose = st.session_state.dynamic.split(' - ')[0]
+            #self.target_pose = st.session_state.dynamic.split(' - ')[1]
             # Erstelle eine Instanz der PoseTransitionCounter-Klasse für den Wechsel zwischen den Posen "pose_a" und "pose_b"
             self.transition_counter = PoseTransitionCounter(pose_name_a=self.initial_pose,
                                                             pose_name_b=self.target_pose,
@@ -61,6 +63,9 @@ class Trainer:
         self.num_repeats=0
         self.fps = 10
         self.count = 0
+
+        self.success_message_shown = False
+        self.success_message_start_time = None
 
 
 
@@ -92,60 +97,34 @@ class Trainer:
         thickness = 2
         font = cv2.FONT_HERSHEY_SIMPLEX
 
-        # Show Progress
-        img_height, img_width = frame.shape[:2]
-        #if self.check_pose(pred_pose):
-        progress = min(img_width, int(img_width / 10) * self.num_repeats)
-        #print(progress)
-        #print(type(progress))
-        cv2.rectangle(output_frame, (0, 405), (max(1,progress), 420), (0, 255, 0), -1)
+        # Fortschrittsbalken anzeigen
+        frame_height, frame_width = frame.shape[:2]
+        progress = min(frame_width, int(frame_width / 10) * self.num_repeats)
+        cv2.rectangle(output_frame, (0, frame_height-20), (max(1,progress), frame_height-40), (76, 177, 34), -1)
 
         # Wenn Übung beendet zeige Erfolgsmeldung
+        #if self.num_repeats >= 10 and not self.success_message_shown:
         if self.num_repeats >= 10:
-            text1 = "Herzlichen Glueckwunsch!"
+            #text1 = "Herzlichen Glueckwunsch!"
             text2 = "Du hast die Uebung erfolgreich gemeistert!"
-            cv2.putText(output_frame, text1, (10, 400), font, font_scale, (255, 255, 255),
+            #cv2.putText(output_frame, text1, (10, frame_height-40), font, font_scale, (255, 255, 255),
+            #            thickness, cv2.LINE_AA)
+            cv2.putText(output_frame, text2, (10, frame_height-20), font, font_scale, (255, 255, 255),
                         thickness, cv2.LINE_AA)
-            cv2.putText(output_frame, text2, (10, 450), font, font_scale, (255, 255, 255),
-                        thickness, cv2.LINE_AA)
+
+            # Merke dir den Startzeitpunkt der Erfolgsmeldung
+            self.success_message_start_time = time.time()
+            # Setze den Flag für die Erfolgsmeldung
+            #self.success_message_shown = True
+
+        # Wenn die Erfolgsmeldung gezeigt wurde und 3 Sekunden vergangen sind
+        if self.success_message_shown and time.time() - self.success_message_start_time >= 3:
+            # Setze den Flag zurück und lösche den Startzeitpunkt
+            self.success_message_shown = False
+            self.success_message_start_time = None
+
 
         return output_frame
 
-
-    def start_exercise(self, target_pose):
-        st.write("Führe die Übung aus und warte auf die Bestätigung...")
-
-        # Placeholder für den Pose-Erkennungsstatus (True/False)
-        pose_detected = False
-
-        # Simuliere Pose-Erkennung für 5 Sekunden (kann durch tatsächliche Logik ersetzt werden)
-        for _ in range(5):
-            time.sleep(1)
-            pose_detected = self.check_pose("Erkannte Pose", target_pose) # Hier müsste die tatsächliche Pose übergeben werden
-            if pose_detected:
-                break
-
-        if pose_detected:
-            st.success("Pose erfolgreich erkannt! Der Countdown beginnt jetzt.")
-
-            # Countdown
-            countdown = st.empty()
-            for i in range(10, -1, -1):
-                countdown.write(f"Noch {i} Sekunden...")
-                time.sleep(1)
-
-                # Inkrementiere den Slider
-                progress = st.slider("Halte die Pose und bewege den Slider:", 0, 10, 0, 1)
-
-                if progress == 10:
-                    self.successful_pose = True
-                    break
-
-            if self.successful_pose:
-                st.success("Herzlichen Glückwunsch! Du hast die Pose erfolgreich gehalten!")
-            else:
-                st.warning("Du hast die Pose nicht lange genug gehalten.")
-        else:
-            st.error("Pose nicht erkannt. Bitte versuche es erneut.")
 
 
