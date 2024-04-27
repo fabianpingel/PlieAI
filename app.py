@@ -7,7 +7,7 @@ def main():
     # Anzeige in der Browser-Registerkarte
     st.set_page_config(page_title="Plié AI",
                        page_icon="🩰")
-    
+
     # Sidebar
     with st.sidebar:
         # Logo
@@ -21,13 +21,20 @@ def main():
         # statische Übungen
         if st.session_state.exercise_type == "Statische Posen":
             st.selectbox('Welche Position möchtest Du üben?',
-                         ('Schere', 'Stein', 'Papier'),
+                         ('1.Position - Arm 3.Position',
+                          '1.Position - Demi Plie',
+                          '1.Position - Grand Plie',
+                          '5.Position - Releve',
+                          'Fussfuehrung',
+                          'Passe',
+                          'Port de Bras'),
                          key='pose')
             st.info(f'Auswahl: {st.session_state.pose}')
         # dynamische Übungen
         else:
             st.selectbox('Welche Bewegungen möchtest Du üben?',
-                         ('Schere - Stein', 'Stein - Papier', 'Schere - Papier'),
+                         ('Grand Battement zur Seite',
+                          'Pique'),
                          key='dynamic')
             st.info(f'Auswahl: {st.session_state.dynamic}')
 
@@ -36,14 +43,21 @@ def main():
             st.toggle("Face Landmarks", value=True, key='face_landmarks')
             st.toggle("Hand Landmarks", value=True, key='hand_landmarks')
             st.toggle("Pose Landmarks", value=True, key='pose_landmarks')
-            st.checkbox("3D Pose Landmarks", value=False,
-                        key='plot_3d_landmarks')  # Toggle sorgt für Flimmern der Streamlit-Oberfläche
-            st.select_slider('Bildqualität', options=list(range(50, 201, 50)), value=100, key='image_size')
+            st.checkbox("Selfie-Ansicht", value=False, key='selfie')
+            #st.checkbox("3D Pose Landmarks", value=False, key='plot_3d_landmarks')  # Toggle sorgt für Flimmern der Streamlit-Oberfläche
+            st.select_slider('Bildqualität', options=list(range(100, 201, 50)), value=150, key='image_size')
+
+        # Copyright und Version
+        copyright = "© 2024 Fabian Pingel"
+        version = "Beta-Version 1.0"
+
+        # Sidebar
+        st.sidebar.markdown(f"{copyright}\n{version}")
 
     # Hauptfenster
     st.title("🩰 Plié AI")
     st.subheader("Pose Learning and Improvement Exercises with AI")
-    st.markdown("Demo - Übungen nur für die rechte Hand :hand: ")
+    st.markdown("🚧 27.04.2024 - Dynamische Posen sind noch in Arbeit... 🚧")
 
     # Webcam-Input
     input_handler = WebcamInput()
