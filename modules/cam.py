@@ -10,10 +10,6 @@ import logging
 import numpy as np
 
 
-st_webrtc_logger = logging.getLogger("streamlit_webrtc")
-st_webrtc_logger.setLevel(logging.WARNING)
-
-
 class WebcamInput:
     """
     Klasse zur Verarbeitung des Webcam-Eingangs für die Pose-Erkennung.
@@ -28,12 +24,16 @@ class WebcamInput:
         self.image_size = float(getattr(st.session_state, 'image_size', 100) / 100)
         self.plot_3d_landmarks = getattr(st.session_state, 'plot_3d_landmarks', False)
 
+        # Logging
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.WARNING)
+
 
     def __del__(self):
         # Freigeben der Ressourcen
         self.pose_detector.close()
         self.pose_classifier.close()
-
+        self.logger.info('Pose Detector und Classifier Ressourcen freigegeben.')
 
 
     def video_frame_callback(self, frame: av.VideoFrame) -> av.VideoFrame:
@@ -47,9 +47,11 @@ class WebcamInput:
         """
         # Konvertierung des Frames in ein Numpy-Array
         image = frame.to_ndarray(format="bgr24")
+        #print(f'Input shape: {image.shape}')
 
         # Anpassen der Bildgröße auf
         resized_image = cv2.resize(image, None, fx=self.image_size, fy=self.image_size)
+        #print(f'Resized shape: {resized_image.shape}')
 
         # Verarbeitung des Bildes durch den PoseDetector
         processed_image, results = self.pose_detector.process_image(resized_image)
@@ -57,9 +59,6 @@ class WebcamInput:
         # Verarbeitung des Bildes durch den PoseClassifier
         if not self.plot_3d_landmarks:
             processed_image = self.pose_classifier.process_image(processed_image, results)
-
-        # Bild horizontal spiegeln für Selfie-Ansicht
-        # processed_image = cv2.flip(processed_image, 1)
 
         # Rückgabe des verarbeiteten Bildes als VideoFrame-Objekt
         return av.VideoFrame.from_ndarray(processed_image, format="bgr24")
@@ -74,7 +73,6 @@ class WebcamInput:
             mode=WebRtcMode.SENDRECV,
             rtc_configuration={"iceServers": get_ice_servers()},
             video_frame_callback=self.video_frame_callback,
-            #media_stream_constraints={"video": True, "audio": False},
             media_stream_constraints={"video": {
                                             "width": {"exact": 640},
                                             "height": {"exact": 480},
