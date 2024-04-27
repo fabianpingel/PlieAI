@@ -32,10 +32,10 @@ class PoseDetector:
                  model_complexity=1,
                  smooth_landmarks=True,
                  enable_segmentation=False,
-                 smooth_segmentation=True,
+                 smooth_segmentation=False,
                  refine_face_landmarks=False,
-                 min_detection_confidence=0.5,
-                 min_tracking_confidence=0.5):
+                 min_detection_confidence=0.6,
+                 min_tracking_confidence=0.6):
         """
         Konstruktor der PoseDetector_Holistic-Klasse.
 
@@ -69,6 +69,8 @@ class PoseDetector:
 
         # Logging
         self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(logging.WARNING) # Log-Level auf erforderliches Niveau setzen
+
 
     def process_image(self, image):
         """
@@ -89,11 +91,11 @@ class PoseDetector:
         results = self.model.process(image_rgb)
 
         # Zeichne Landmarks im Bild, wenn aktiviert und vorhanden
-        self._draw_keypoints(image, results)
-
-        # Debugging Bildformat mobiles Endgerät bestimmen
-        bildformat = str(image.shape)
-        cv2.putText(image, bildformat, (200, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA)
+        if results:
+            self._draw_keypoints(image, results)
+        #print(f'Processed shape: {image.shape}')
+        #bildformat = str(image.shape)
+        #cv2.putText(image, bildformat, (200, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
         # Erstelle den 3D-Plot der Landmarks, wenn aktiviert
         if self.plot_3d_landmarks:
