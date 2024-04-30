@@ -1,6 +1,6 @@
 streamlit
 streamlit-webrtc
 mediapipe
-opencv-python
+opencv-python-headless
 twilio
 scikit-learn==1.4.2
