@@ -20,7 +20,7 @@ class WebcamInput:
         Initialisiert die WebcamInput-Klasse.
         """
         self.pose_detector = PoseDetector()  # Initialisierung des PoseDetector-Objekts
-        self.pose_classifier = PoseClassifier('k-Nearest Neighbors.pkl')
+        self.pose_classifier = PoseClassifier('Logistic Regression.pkl')
         self.image_size = float(getattr(st.session_state, 'image_size', 100) / 100)
         self.plot_3d_landmarks = getattr(st.session_state, 'plot_3d_landmarks', False)
 
