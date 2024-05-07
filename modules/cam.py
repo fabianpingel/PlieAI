@@ -54,22 +54,23 @@ class WebcamInput:
         """
 
         # Konvertierung des Frames in ein Numpy-Array
-        image = frame.to_ndarray(format="bgr24")
+        ##image = frame.to_ndarray(format="bgr24")
         #print(f'Input shape: {image.shape}')
 
         # Anpassen der Bildgröße auf
-        resized_image = cv2.resize(image, None, fx=self.image_size, fy=self.image_size)
+        ##resized_image = cv2.resize(image, None, fx=self.image_size, fy=self.image_size)
         #print(f'Resized shape: {resized_image.shape}')
 
         # Verarbeitung des Bildes durch den PoseDetector
-        processed_image, results = self.pose_detector.process_image(resized_image)
+        ##processed_image, results = self.pose_detector.process_image(resized_image)
 
         # Verarbeitung des Bildes durch den PoseClassifier
-        if not self.plot_3d_landmarks:
-            processed_image = self.pose_classifier.process_image(processed_image, results)
+        ##if not self.plot_3d_landmarks:
+        ##    processed_image = self.pose_classifier.process_image(processed_image, results)
 
         # Rückgabe des verarbeiteten Bildes als VideoFrame-Objekt
-        return av.VideoFrame.from_ndarray(processed_image, format="bgr24")
+        ##return av.VideoFrame.from_ndarray(processed_image, format="bgr24")
+        return frame
 
 
 
