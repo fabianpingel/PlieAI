@@ -25,7 +25,7 @@ def get_ice_servers():
         logger.warning(
             "Twilio credentials are not set. Fallback to a free STUN server from Google."  # noqa: E501
         )
-        return [{"urls": ["stun:stun.l.google.com:19302"]}]
+        return [{"urls": ["stun:stun1.l.google.com:19302"]}]
 
     client = Client(account_sid, auth_token)
 
