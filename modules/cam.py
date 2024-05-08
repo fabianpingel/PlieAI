@@ -82,13 +82,14 @@ class WebcamInput:
         webrtc_ctx = webrtc_streamer(
             key="pose_detection",
             mode=WebRtcMode.SENDRECV,
-            rtc_configuration={"iceServers": get_ice_servers()},
+            rtc_configuration={"iceServers": get_ice_servers(),
+                               "iceTransportPolicy": "relay",},
             video_frame_callback=self.video_frame_callback,
             media_stream_constraints={"video": {
                                             "width": {"exact": 640},
                                             "height": {"exact": 480},
                                             "frameRate": {"ideal": 20}},
-                                      "audio": False},
+                                      "audio": False},           
             async_processing=True,
         )
 
