@@ -9,11 +9,11 @@ from modules.classifier import PoseClassifier   # `PoseClassifier`-Klasse aus de
 import logging
 import numpy as np
 
-#st_webrtc_logger = logging.getLogger("streamlit_webrtc")
-#st_webrtc_logger.setLevel(logging.WARNING)
+st_webrtc_logger = logging.getLogger("streamlit_webrtc")
+st_webrtc_logger.setLevel(logging.WARNING)
 
-#aioice_logger = logging.getLogger("aioice")
-#aioice_logger.setLevel(logging.WARNING)
+aioice_logger = logging.getLogger("aioice")
+aioice_logger.setLevel(logging.WARNING)
 
 class WebcamInput:
     """
@@ -24,8 +24,6 @@ class WebcamInput:
         """
         Initialisiert die WebcamInput-Klasse.
         """
-
-
         self.pose_detector = PoseDetector()  # Initialisierung des PoseDetector-Objekts
         self.pose_classifier = PoseClassifier('Logistic Regression.pkl')
         self.image_size = float(getattr(st.session_state, 'image_size', 100) / 100)
@@ -52,25 +50,29 @@ class WebcamInput:
         Returns:
             av.VideoFrame: Das verarbeitete Video-Frame.
         """
-
-        # Konvertierung des Frames in ein Numpy-Array
-        image = frame.to_ndarray(format="bgr24")
-        #print(f'Input shape: {image.shape}')
-
-        # Anpassen der Bildgröße auf
-        resized_image = cv2.resize(image, None, fx=self.image_size, fy=self.image_size)
-        #print(f'Resized shape: {resized_image.shape}')
-
-        # Verarbeitung des Bildes durch den PoseDetector
-        processed_image, results = self.pose_detector.process_image(resized_image)
-
-        # Verarbeitung des Bildes durch den PoseClassifier
-        ##if not self.plot_3d_landmarks:
-        ##    processed_image = self.pose_classifier.process_image(processed_image, results)
-
-        # Rückgabe des verarbeiteten Bildes als VideoFrame-Objekt
-        return av.VideoFrame.from_ndarray(processed_image, format="bgr24")
-
+        try:
+            # Konvertierung des Frames in ein Numpy-Array
+            image = frame.to_ndarray(format="bgr24")
+            #print(f'Input shape: {image.shape}')
+    
+            # Anpassen der Bildgröße auf
+            resized_image = cv2.resize(image, None, fx=self.image_size, fy=self.image_size)
+            #print(f'Resized shape: {resized_image.shape}')
+    
+            # Verarbeitung des Bildes durch den PoseDetector
+            processed_image, results = self.pose_detector.process_image(resized_image)
+    
+            # Verarbeitung des Bildes durch den PoseClassifier
+            if not self.plot_3d_landmarks:
+                processed_image = self.pose_classifier.process_image(processed_image, results)
+    
+            # Rückgabe des verarbeiteten Bildes als VideoFrame-Objekt
+            return av.VideoFrame.from_ndarray(processed_image, format="bgr24")
+            
+        except Exception as e:
+            self.logger.error(f" Fehler bei der Verarbeitung des Streams: {e}")
+            # Rückgabe des unbearbeiteten Frames im Fehlerfall
+            return frame
 
 
 
@@ -85,13 +87,13 @@ class WebcamInput:
             rtc_configuration={"iceServers": get_ice_servers(),
                                "iceTransportPolicy": "relay",},
             video_frame_callback=self.video_frame_callback,
-            #media_stream_constraints={"video": {
-            #                                "width": {"exact": 640},
-            #                                "height": {"exact": 480},
-            #                                "frameRate": {"ideal": 20}},
-            #                          "audio": False},
-            media_stream_constraints={"video": True,
-                                      "audio": False},  
+            media_stream_constraints={"video": {
+                                            "width": {"exact": 640},
+                                            "height": {"exact": 480},
+                                            "frameRate": {"ideal": 20}},
+                                      "audio": False},
+            #media_stream_constraints={"video": True,
+            #                          "audio": False},  
             async_processing=True,
         )
 
