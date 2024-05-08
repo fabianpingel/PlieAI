@@ -9,11 +9,11 @@ from modules.classifier import PoseClassifier   # `PoseClassifier`-Klasse aus de
 import logging
 import numpy as np
 
-st_webrtc_logger = logging.getLogger("streamlit_webrtc")
-st_webrtc_logger.setLevel(logging.WARNING)
+#st_webrtc_logger = logging.getLogger("streamlit_webrtc")
+#st_webrtc_logger.setLevel(logging.WARNING)
 
-aioice_logger = logging.getLogger("aioice")
-aioice_logger.setLevel(logging.WARNING)
+#aioice_logger = logging.getLogger("aioice")
+#aioice_logger.setLevel(logging.WARNING)
 
 class WebcamInput:
     """
