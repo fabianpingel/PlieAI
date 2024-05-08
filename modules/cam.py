@@ -54,7 +54,7 @@ class WebcamInput:
         """
 
         # Konvertierung des Frames in ein Numpy-Array
-        ##image = frame.to_ndarray(format="bgr24")
+        image = frame.to_ndarray(format="bgr24")
         #print(f'Input shape: {image.shape}')
 
         # Anpassen der Bildgröße auf
@@ -69,8 +69,7 @@ class WebcamInput:
         ##    processed_image = self.pose_classifier.process_image(processed_image, results)
 
         # Rückgabe des verarbeiteten Bildes als VideoFrame-Objekt
-        ##return av.VideoFrame.from_ndarray(processed_image, format="bgr24")
-        return frame
+        return av.VideoFrame.from_ndarray(image, format="bgr24")
 
 
 
