@@ -1,6 +1,6 @@
 streamlit==1.33.0
 streamlit-webrtc==0.47.6
 mediapipe==0.10.11
-opencv-python
-twilio
+opencv-python-headless==4.9.0.80
+twilio==9.0.5
 scikit-learn==1.4.2
