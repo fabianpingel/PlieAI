@@ -7,7 +7,7 @@ import streamlit as st
 class PoseTransitionCounter(object):
     """Zählt die Anzahl der Wechsel zwischen zwei spezifischen Posen."""
 
-    def __init__(self, pose_name_a, pose_name_b, threshold=.5):
+    def __init__(self, pose_name_a, pose_name_b, threshold=.8):
         self._pose_name_a = pose_name_a
         self._pose_name_b = pose_name_b
         self._threshold = threshold
@@ -46,19 +46,15 @@ class PoseTransitionCounter(object):
 class Trainer:
     def __init__(self):
         self.exercise_type = st.session_state.exercise_type
-        #st.write(st.session_state.exercise_type)
         if self.exercise_type == "Statische Posen":
             self.target_pose = st.session_state.pose
-            #st.write(st.session_state.pose)
         else:
-            self.initial_pose = st.session_state.dynamic
-            self.target_pose = st.session_state.dynamic
-            #self.initial_pose = st.session_state.dynamic.split(' - ')[0]
-            #self.target_pose = st.session_state.dynamic.split(' - ')[1]
+            self.initial_pose = 'down'
+            self.target_pose = 'up'
             # Erstelle eine Instanz der PoseTransitionCounter-Klasse für den Wechsel zwischen den Posen "pose_a" und "pose_b"
             self.transition_counter = PoseTransitionCounter(pose_name_a=self.initial_pose,
                                                             pose_name_b=self.target_pose,
-                                                            threshold=0.5)
+                                                            threshold=0.8)
         self.success = False
         self.num_repeats=0
         self.fps = 10

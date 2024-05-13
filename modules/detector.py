@@ -3,6 +3,7 @@ import mediapipe as mp  # mediapipe für die Pose-Erkennung
 import streamlit as st  # streamlit
 import cv2              # OpenCV für die Bildverarbeitung
 import logging
+import numpy as np
 
 import os
 import matplotlib.pyplot as plt
@@ -51,21 +52,24 @@ class PoseDetector:
             min_detection_confidence (float): Minimale Konfidenz, ab der Erkennungen als erfolgreich gelten.
             min_tracking_confidence (float): Minimale Konfidenz für das Tracking von Objekten über Frames hinweg.
         """
-        self.model = mp_holistic.Holistic(
-            static_image_mode=static_image_mode,
-            model_complexity=model_complexity,
-            min_detection_confidence=min_detection_confidence,
-            min_tracking_confidence=min_tracking_confidence,
-            smooth_landmarks=smooth_landmarks,
-            enable_segmentation=enable_segmentation,
-            smooth_segmentation=smooth_segmentation,
-            refine_face_landmarks=refine_face_landmarks)
 
         # Option zum Zeichnen von Landmarks abhängig vom Streamlit-Session-Zustand
         self.show_face_landmarks = getattr(st.session_state, 'face_landmarks', False)
         self.show_hand_landmarks = getattr(st.session_state, 'hand_landmarks', False)
         self.show_pose_landmarks = getattr(st.session_state, 'pose_landmarks', False)
         self.plot_3d_landmarks = getattr(st.session_state, 'plot_3d_landmarks', False)
+        self.segmentation = getattr(st.session_state, 'segmentation', False)
+
+        # Modell erzeugen
+        self.model = mp_holistic.Holistic(
+            static_image_mode=static_image_mode,
+            model_complexity=model_complexity,
+            min_detection_confidence=min_detection_confidence,
+            min_tracking_confidence=min_tracking_confidence,
+            enable_segmentation=self.segmentation,
+            smooth_landmarks=smooth_landmarks,
+            smooth_segmentation=self.segmentation,
+            refine_face_landmarks=refine_face_landmarks)
 
         # Logging
         self.logger = logging.getLogger(__name__)
@@ -90,6 +94,12 @@ class PoseDetector:
         # Verarbeite das Bild mit dem Holistic-Modell
         results = self.model.process(image_rgb)
 
+        # Segmentation
+        #print(self.segmentation)
+
+        if self.segmentation:
+            image = self._draw_segmentation(image, results)
+
         # Zeichne Landmarks im Bild, wenn aktiviert und vorhanden
         if results:
             self._draw_keypoints(image, results)
@@ -101,7 +111,21 @@ class PoseDetector:
         if self.plot_3d_landmarks:
             image = self._plot_landmarks_3d(results)
 
+
         return image, results
+
+
+    def _draw_segmentation(self, image, results):
+        # Draw pose segmentation.
+        annotated_image = image.copy()
+        red_img = np.zeros_like(annotated_image, dtype=np.uint8)
+        #red_img = np.zeros_like(image, dtype=np.uint8)
+        red_img[:, :] = (255, 255, 255)
+        segm_2class = 0.2 + 0.8 * results.segmentation_mask
+        segm_2class = np.repeat(segm_2class[..., np.newaxis], 3, axis=2)
+        annotated_image = annotated_image * segm_2class + red_img * (1 - segm_2class)
+        return annotated_image.astype(np.uint8)
+
 
     def _draw_keypoints(self, image, results):
         """

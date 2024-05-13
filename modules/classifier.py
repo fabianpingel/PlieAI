@@ -14,7 +14,7 @@ class PoseClassifier:
     Klasse zur Verarbeitung der PoseDetector Ergebnisse für die Pose-Klassifizierung.
     """
 
-    def __init__(self, model):
+    def __init__(self, model_name):
         """
         Initialisiert den PoseClassifier.
 
@@ -32,12 +32,19 @@ class PoseClassifier:
 
         # Option zum Zeichnen von Landmarks abhängig vom Streamlit-Session-Zustand
         self.selfie_view = getattr(st.session_state, 'selfie', False)
+        self.segmentation = getattr(st.session_state, 'segmentation', False)
+
+        # Referenzpose
+        if st.session_state.exercise_type == "Statische Posen":
+            self.reference_pose = getattr(st.session_state, 'pose')
+        else:
+            self.reference_pose = None
 
         # Logging
         self.logger = logging.getLogger(__name__)
 
         # Modell laden
-        self.load_model(model)
+        self.load_model(model_name)
 
         # Landmark Namen
         self._landmark_names = [
@@ -60,15 +67,15 @@ class PoseClassifier:
         ]
 
 
-    def load_model(self, name):
+    def load_model(self, model_name):
         """
         Laden des Modells aus einer Datei mit pickle.
 
         Args:
-            name (str): Der Name der Datei, in der das Modell gespeichert ist.
+            model_name (str): Der Name der Datei, in der das Modell gespeichert ist.
         """
         try:
-            with open(os.path.join(self.model_path, name), 'rb') as file:
+            with open(os.path.join(self.model_path, model_name + '.pkl'), 'rb') as file:
                 self.model = pickle.load(file)
             self.trained_poses = self.model.classes_ if self.model is not None else None
             self.logger.info("Modell erfolgreich geladen.")
@@ -78,6 +85,15 @@ class PoseClassifier:
 
 
     def create_feature_names(self):
+        """
+        Erzeugt eine Liste von Spaltennamen für die Merkmale der Pose-Landmarken.
+
+        Die Methode erstellt eine Liste von Spaltennamen basierend auf den x-, y- und z-Koordinaten
+        der Pose-Landmarken sowie optionaler Sichtbarkeits- und Präsenzindikatoren.
+
+        Returns:
+            list: Eine Liste von Spaltennamen für die Merkmale der Pose-Landmarken.
+        """
         num_pose_landmarks = 33
         num_face_landmarks = 468
         num_hand_landmarks = 21
@@ -197,8 +213,8 @@ class PoseClassifier:
 
 
 
-    @staticmethod
-    def show_pose_classification(res, poses, input_frame, start_y=10):
+    #@staticmethod
+    def show_pose_classification(self, res, poses, input_frame, start_y=10):
         """
         Visualisiert die Wahrscheinlichkeiten der zugehörigen Posen in einem Bild.
 
@@ -219,6 +235,9 @@ class PoseClassifier:
         font_scale = 1
         thickness = 2
         font = cv2.FONT_HERSHEY_SIMPLEX
+        text_color = (255, 255, 255)
+        if self.segmentation:
+            text_color = (0, 0, 0)
 
         # Bestimme die Länge des längsten Textes
         max_text_length = max(
@@ -238,8 +257,51 @@ class PoseClassifier:
             # Zeichne das Rechteck und den Text basierend auf der Wahrscheinlichkeit
             cv2.rectangle(output_frame, (0, y_start - 5), (max(5, int(prob * max_text_length)), y_start + text_height),
                           color, -1)
-            cv2.putText(output_frame, poses[num], (0, y_start + text_height - 5), font, font_scale, (255, 255, 255),
+            cv2.putText(output_frame, poses[num], (0, y_start + text_height - 5), font, font_scale, text_color,
                         thickness, cv2.LINE_AA)
+
+        return output_frame
+
+
+    def show_reference_pose_probability(self, res, input_frame, reference_pose=None, y_start=10):
+        """
+        Visualisiert die Wahrscheinlichkeit der ausgewählten Referenzpose in einem Bild.
+
+        Args:
+            res (list): Eine Liste von Wahrscheinlichkeitswerten aus dem Classifier
+            reference_pose (str): Die Referenzpose, für die die Wahrscheinlichkeit angezeigt werden soll.
+            input_frame (numpy.ndarray): Das Eingabebild.
+            start_y (int, optional): Der y-Startpunkt für die Platzierung der visualisierten Posen. Defaults to 10.
+
+        Returns:
+            numpy.ndarray: Das Ausgabebild mit visualisierter Wahrscheinlichkeit für die Referenzpose.
+        """
+        # Kopiere das Eingabebild, um das Ausgabebild zu erstellen
+        output_frame = input_frame.copy()
+
+        # Bestimme die Schriftgröße und -dicke
+        font_scale = 1
+        thickness = 2
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        text_color = (255, 255, 255)
+        if self.segmentation:
+            text_color = (0, 0, 0)
+
+        # Finde den Index der Referenzpose in der Liste der Posen
+        ref_pose_index = np.where(np.array(self.trained_poses) == reference_pose)[0][0]
+        #print(ref_pose_index)
+
+        # Berechne die Höhe des Textes
+        text_size = cv2.getTextSize(reference_pose, font, font_scale, thickness)[0]
+        text_height = text_size[1]
+        color = (0, int((res[ref_pose_index]) * 255), int((1 - res[ref_pose_index]) * 255))  # BGR Format OpenCV
+
+        # Zeichne das Rechteck und den Text basierend auf der Wahrscheinlichkeit der Referenzpose
+        cv2.rectangle(output_frame, (0, y_start - 5),
+                      (max(5, int(res[ref_pose_index] * text_size[0])), y_start + text_height),
+                      color, -1)
+        cv2.putText(output_frame, reference_pose, (0, y_start + text_height - 5), font, font_scale, text_color,
+                    thickness, cv2.LINE_AA)
 
         return output_frame
 
@@ -269,7 +331,10 @@ class PoseClassifier:
                 image = cv2.flip(image, 1)
 
             # Klasse anzeigen
-            output_frame = self.show_pose_classification(pose_prob, self.trained_poses, image)
+            if self.reference_pose: # statische übungen
+                output_frame = self.show_reference_pose_probability(pose_prob, image, self.reference_pose)
+            else:
+                output_frame = self.show_pose_classification(pose_prob, self.trained_poses, image)
 
             # Trainer aktualisieren
             self.pose_trainer.update(pose_class)
