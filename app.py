@@ -31,7 +31,7 @@ def main():
                          key='pose')
             # st.info(f'Auswahl: {st.session_state.pose}')
             # Pose als Bild anzeigen
-            st.image(f'src/pose_images/{st.session_state.pose}.jpg',
+            st.image(f'src\\pose_images\\{st.session_state.pose}.jpg',
                      caption=st.session_state.pose,
                      use_column_width=True)
 
@@ -64,7 +64,7 @@ def main():
     # Hauptfenster
     st.title("🩰 Plié AI")
     st.subheader("Pose Learning and Improvement Exercises with AI")
-    st.markdown("🚧 11.05.2024 - Dynamische Posen sind zur Hälfte drin... 🚧")
+    #st.markdown("🚧 11.05.2024 - Dynamische Posen sind zur Hälfte drin... 🚧")
 
     # Webcam-Input
     input_handler = WebcamInput()
