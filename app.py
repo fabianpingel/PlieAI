@@ -31,7 +31,7 @@ def main():
                          key='pose')
             # st.info(f'Auswahl: {st.session_state.pose}')
             # Pose als Bild anzeigen
-            st.image(f'src\\pose_images\\{st.session_state.pose}.jpg',
+            st.image(f'src/pose_images/{st.session_state.pose}.jpg',
                      caption=st.session_state.pose,
                      use_column_width=True)
 
