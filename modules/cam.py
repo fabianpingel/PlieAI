@@ -34,6 +34,7 @@ class WebcamInput:
         self.pose_classifier = PoseClassifier(self.classifier_model_name)
         self.image_size = float(getattr(st.session_state, 'image_size', 100) / 100)
         self.plot_3d_landmarks = getattr(st.session_state, 'plot_3d_landmarks', False)
+        self.selfie_view = getattr(st.session_state, 'selfie', False)
 
         # Logging
         self.logger = logging.getLogger(__name__)
@@ -60,6 +61,10 @@ class WebcamInput:
             # Konvertierung des Frames in ein Numpy-Array
             image = frame.to_ndarray(format="bgr24")
             #print(f'Input shape: {image.shape}')
+
+            # Bild horizontal spiegeln für Selfie-Ansicht
+            if self.selfie_view:
+                image = cv2.flip(image, 1)
 
             # Anpassen der Bildgröße auf
             resized_image = cv2.resize(image, None, fx=self.image_size, fy=self.image_size)

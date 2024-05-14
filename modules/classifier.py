@@ -319,30 +319,49 @@ class PoseClassifier:
         """
         # Wenn Pose erkannt...
         if results.pose_landmarks:
-            # Transform Data
-            X = self.transform_data(results, *image.shape[:2])
+            # Wenn genügend Landmarks erkannt:
+            lmk_visibility = np.sum(np.array([[res.visibility] for res in results.pose_landmarks.landmark]))
+            #print(f" lmk_visibility: {lmk_visibility}")
+            if lmk_visibility > 28: # Schwellwert, um Klassifizierung anzuzeigen
 
-            # Predict
-            pose_class, pose_prob = self.predict(X)
-            #print(pose_class, pose_prob)
+                # Transform Data
+                X = self.transform_data(results, *image.shape[:2])
 
-            # Bild horizontal spiegeln für Selfie-Ansicht
-            if self.selfie_view:
-                image = cv2.flip(image, 1)
+                # Predict
+                pose_class, pose_prob = self.predict(X)
+                print(pose_class, pose_prob)
 
-            # Klasse anzeigen
-            if self.reference_pose: # statische übungen
-                output_frame = self.show_reference_pose_probability(pose_prob, image, self.reference_pose)
+                # Bild horizontal spiegeln für Selfie-Ansicht
+                #if self.selfie_view:
+                #    image = cv2.flip(image, 1)
+
+                # Klasse anzeigen
+                if self.reference_pose: # statische übungen
+                    output_frame = self.show_reference_pose_probability(pose_prob, image, self.reference_pose)
+                else:
+                    output_frame = self.show_pose_classification(pose_prob, self.trained_poses, image)
+
+                # Trainer aktualisieren
+                self.pose_trainer.update(pose_class)
+                #print(self.pose_trainer.num_repeats)
+
+                output_frame_res = self.pose_trainer.show_progress(output_frame)
+
+                return output_frame_res
+
+            # Meldung anzeigen, wenn nicht genügend Landmarks erkannt
             else:
-                output_frame = self.show_pose_classification(pose_prob, self.trained_poses, image)
-
-            # Trainer aktualisieren
-            self.pose_trainer.update(pose_class)
-            #print(self.pose_trainer.num_repeats)
-
-            output_frame_res = self.pose_trainer.show_progress(output_frame)
-
-            return output_frame_res
+                text = 'Pose nicht erkannt'
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                font_scale = 2
+                font_thickness = 3
+                text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
+                text_x = (image.shape[1] - text_size[0]) // 2
+                #text_y = (image.shape[0] + text_size[1]) // 2
+                cv2.rectangle(image, (text_x, 100 + 5), (text_x + text_size[0], 100 - text_size[1] - 5),
+                              (0,255,255), -1)
+                cv2.putText(image, text, (text_x, 100), font, font_scale, (0,0,255),
+                            font_thickness, cv2.LINE_AA)
 
         return image # Originalbild zurückgeben, wenn keine Landmarks erkannt wurden
 
