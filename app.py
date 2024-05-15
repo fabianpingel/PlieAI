@@ -56,7 +56,7 @@ def main():
 
         # Copyright und Version
         copyright = "© 2024 Fabian Pingel"
-        version = "Beta-Version 1.2"
+        version = "Beta-Version 1.3"
 
         # Sidebar
         st.sidebar.markdown(f"{copyright}\n{version}")
