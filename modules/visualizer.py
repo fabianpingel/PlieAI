@@ -35,7 +35,7 @@ class PoseVisualizer:
 
         self.trained_poses = trained_poses
 
-        self.landmark_thresh = 9 # 29
+        self.landmark_thresh = 29 # 29
 
         # Trainer initialisieren
         self.pose_trainer = Trainer()
