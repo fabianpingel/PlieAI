@@ -1,11 +1,12 @@
 # Imports
-import av                                       # für die Verarbeitung von Audio- und Videodaten
-import streamlit as st                          # für die Erstellung der Streamlit-App
+import av                                                   # für die Verarbeitung von Audio- und Videodaten
+import streamlit as st                                      # für die Erstellung der Streamlit-App
 from streamlit_webrtc import WebRtcMode, webrtc_streamer    # für WebRTC-Streams in Streamlit
-from modules.detector import PoseDetector       # `PoseDetector`-Klasse für die Pose-Erkennung
-from utils.turn import get_ice_servers          # Funktion 'get_ice_servers' aus dem Modul 'utils.turn'
-import cv2                                      # OpenCV für die Bildverarbeitung
-from modules.classifier import PoseClassifier   # `PoseClassifier`-Klasse aus dem `classifier`-Modul für die Pose-Klassifizierung
+from modules.detector import PoseDetector                   # `PoseDetector`-Klasse für die Pose-Erkennung
+from utils.turn import get_ice_servers                      # Funktion 'get_ice_servers' aus dem Modul 'utils.turn'
+import cv2                                                  # OpenCV für die Bildverarbeitung
+from modules.classifier import PoseClassifier               # `PoseClassifier`-Klasse für die Pose-Klassifizierung
+from modules.visualizer import PoseVisualizer               # `PoseVisualizer`-Klasse für die Visualisierung
 import logging
 import numpy as np
 
@@ -14,6 +15,7 @@ st_webrtc_logger.setLevel(logging.WARNING)
 
 aioice_logger = logging.getLogger("aioice")
 aioice_logger.setLevel(logging.WARNING)
+
 
 class WebcamInput:
     """
@@ -30,8 +32,11 @@ class WebcamInput:
         else:
             self.classifier_model_name = 'Logistic Regression'
 
+        #
         self.pose_detector = PoseDetector()  # Initialisierung des PoseDetector-Objekts
         self.pose_classifier = PoseClassifier(self.classifier_model_name)
+        self.pose_visualizer = PoseVisualizer(self.pose_classifier.trained_poses)
+
         self.image_size = float(getattr(st.session_state, 'image_size', 100) / 100)
         self.plot_3d_landmarks = getattr(st.session_state, 'plot_3d_landmarks', False)
         self.selfie_view = getattr(st.session_state, 'selfie', False)
@@ -40,13 +45,11 @@ class WebcamInput:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.WARNING)
 
-
     def __del__(self):
         # Freigeben der Ressourcen
         self.pose_detector.close()
         self.pose_classifier.close()
         self.logger.info('Pose Detector und Classifier Ressourcen freigegeben.')
-
 
     def video_frame_callback(self, frame: av.VideoFrame) -> av.VideoFrame:
         """Callback-Funktion für jedes empfangene Video-Frame.
@@ -60,7 +63,7 @@ class WebcamInput:
         try:
             # Konvertierung des Frames in ein Numpy-Array
             image = frame.to_ndarray(format="bgr24")
-            #print(f'Input shape: {image.shape}')
+            self.logger.debug(f" Input shape: {image.shape}")
 
             # Bild horizontal spiegeln für Selfie-Ansicht
             if self.selfie_view:
@@ -68,14 +71,26 @@ class WebcamInput:
 
             # Anpassen der Bildgröße auf
             resized_image = cv2.resize(image, None, fx=self.image_size, fy=self.image_size)
-            #print(f'Resized shape: {resized_image.shape}')
+            self.logger.debug(f" Resized shape: {resized_image.shape}")
 
             # Verarbeitung des Bildes durch den PoseDetector
             processed_image, results = self.pose_detector.process_image(resized_image)
 
             # Verarbeitung des Bildes durch den PoseClassifier
+            # Daten transformieren
+            X, embeddings = self.pose_classifier.transform_data(results, *processed_image.shape[:2])
+            # Vorhersage
+            pose_class, pose_prob = self.pose_classifier.predict(X)
+            #print(pose_class, pose_prob)
+
+            # Verarbeitung des Bildes durch den PoseVisualizer
             if not self.plot_3d_landmarks:
-                processed_image = self.pose_classifier.process_image(processed_image, results)
+                processed_image = self.pose_visualizer.process_image(processed_image,
+                                                                     results,
+                                                                     pose_class,
+                                                                     pose_prob,
+                                                                     embeddings)
+                #processed_image = self.pose_classifier.process_image(processed_image, results)
 
             # Rückgabe des verarbeiteten Bildes als VideoFrame-Objekt
             return av.VideoFrame.from_ndarray(processed_image, format="bgr24")
@@ -84,8 +99,6 @@ class WebcamInput:
             self.logger.error(f" Fehler bei der Verarbeitung des Streams: {e}")
             # Rückgabe des unbearbeiteten Frames im Fehlerfall
             return frame
-
-
 
     def run(self) -> None:
         """
@@ -97,13 +110,12 @@ class WebcamInput:
             rtc_configuration={"iceServers": get_ice_servers()},
             video_frame_callback=self.video_frame_callback,
             media_stream_constraints={"video": {
-                                            "width": {"exact": 640},
-                                            "height": {"exact": 480},
-                                            "frameRate": {"ideal": 20}},
-                                      "audio": False},
+                "width": {"exact": 640},
+                "height": {"exact": 480},
+                "frameRate": {"ideal": 20}},
+                "audio": False},
             async_processing=True,
         )
 
         if not webrtc_ctx.state.playing:
             st.warning("Warte auf Video-Stream...")  # Anzeige einer Warnung, wenn kein Video-Stream vorhanden ist
-

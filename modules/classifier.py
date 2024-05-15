@@ -6,7 +6,7 @@ import cv2
 import streamlit as st
 import logging
 
-from modules.trainer import Trainer
+from modules.embedder import PoseEmbedder
 
 
 class PoseClassifier:
@@ -27,44 +27,15 @@ class PoseClassifier:
         self.trained_poses = None
         self.columns = self.create_feature_names()
 
-        # Trainer initialisieren
-        self.pose_trainer = Trainer()
-
-        # Option zum Zeichnen von Landmarks abhängig vom Streamlit-Session-Zustand
-        self.selfie_view = getattr(st.session_state, 'selfie', False)
-        self.segmentation = getattr(st.session_state, 'segmentation', False)
-
-        # Referenzpose
-        if st.session_state.exercise_type == "Statische Posen":
-            self.reference_pose = getattr(st.session_state, 'pose')
-        else:
-            self.reference_pose = None
-
         # Logging
         self.logger = logging.getLogger(__name__)
 
         # Modell laden
         self.load_model(model_name)
 
-        # Landmark Namen
-        self._landmark_names = [
-            'nose',
-            'left_eye_inner', 'left_eye', 'left_eye_outer',
-            'right_eye_inner', 'right_eye', 'right_eye_outer',
-            'left_ear', 'right_ear',
-            'mouth_left', 'mouth_right',
-            'left_shoulder', 'right_shoulder',
-            'left_elbow', 'right_elbow',
-            'left_wrist', 'right_wrist',
-            'left_pinky_1', 'right_pinky_1',
-            'left_index_1', 'right_index_1',
-            'left_thumb_2', 'right_thumb_2',
-            'left_hip', 'right_hip',
-            'left_knee', 'right_knee',
-            'left_ankle', 'right_ankle',
-            'left_heel', 'right_heel',
-            'left_foot_index', 'right_foot_index',
-        ]
+        # Pose Embeddings initialisieren
+        self.pose_embedder = PoseEmbedder()
+
 
 
     def load_model(self, model_name):
@@ -131,63 +102,12 @@ class PoseClassifier:
         #pose *= np.array([width, height, width])
 
         # Embeddings erzeugen
-        embeddings = self.landmarks_2_embedding(pose)
-
-        return pd.DataFrame([embeddings], columns=self.columns)
-
-
-    def _get_center_point(self, landmarks, left_bodypart, right_bodypart):
-        """Berechnet den Mittelpunkt der beiden angegebenen Landmarken."""
-        left = landmarks[self._landmark_names.index(left_bodypart)]
-        right = landmarks[self._landmark_names.index(right_bodypart)]
-        center = (left + right) * 0.5
-        return center
-
-
-    def _get_pose_size(self, landmarks, torso_size_multiplier=2.5):
-        """Berechnet die Größe der Pose.
-
-        Es ist das Maximum von zwei Werten:
-        * Torsogröße multipliziert mit `torso_size_multiplier`
-        * Maximaler Abstand vom Posenmittelpunkt zu einer beliebigen Posenmarkierung
-        """
-
-        # Bei diesem Ansatz werden nur die 2D-Koordinaten zur Berechnung der Posengröße verwendet.
-        landmarks = landmarks[:, :2]
-
-        # Hüftmitte
-        hips = self._get_center_point(landmarks, 'left_hip', 'right_hip')
-
-        # Schultermitte
-        shoulders = self._get_center_point(landmarks, 'left_shoulder', 'right_shoulder')
-
-        # Torsogröße als Mindestgröße des Körpers.
-        torso_size = np.linalg.norm(shoulders - hips)
-
-        # Max dist to pose center.
-        pose_center = self._get_center_point(landmarks, 'left_hip', 'right_hip')
-        max_dist = np.max(np.linalg.norm(landmarks - pose_center, axis=1))
-
-        return max(torso_size * torso_size_multiplier, max_dist)
-
-
-    def landmarks_2_embedding(self, landmarks):
-
-        # Verschieben ins Pose-Zentrum auf (0,0)
-        pose_center = self._get_center_point(landmarks, 'left_hip', 'right_hip')
-        landmarks -= pose_center
-
-        # Skalierung der Landmarks auf eine konstante Größe
-        pose_size = self._get_pose_size(landmarks)
-        landmarks /= pose_size
-
-        # Werte auf 6 Nachkommastellen runden
-        landmarks = np.around(landmarks, 6)
-
+        embeddings = self.pose_embedder(pose)
         # Landmarks in Vektor umwandeln
-        embeddings = landmarks.flatten().tolist()
+        #embeddings = embeddings.flatten().tolist()
 
-        return embeddings
+        #return pd.DataFrame([embeddings], columns=self.columns)
+        return pd.DataFrame([embeddings.flatten().tolist()], columns=self.columns), embeddings
 
 
     def predict(self, X):
@@ -210,161 +130,6 @@ class PoseClassifier:
         else:
             self.logger.error("Kein Modell geladen, Vorhersage nicht möglich.")
             return None
-
-
-
-    #@staticmethod
-    def show_pose_classification(self, res, poses, input_frame, start_y=10):
-        """
-        Visualisiert die Wahrscheinlichkeiten der zugehörigen Posen in einem Bild.
-
-        Args:
-            res (list): Eine Liste von Wahrscheinlichkeitswerten aus dem Classifier
-            poses (list): Eine Liste von Posen.
-            input_frame (numpy.ndarray): Das Eingabebild.
-            colors (list): Eine Liste von Farben für die Visualisierung.
-            start_y (int, optional): Der y-Startpunkt für die Platzierung der visualisierten Posen. Defaults to 10.
-
-        Returns:
-            numpy.ndarray: Das Ausgabebild mit visualisierten Wahrscheinlichkeiten und Posen.
-        """
-        # Kopiere das Eingabebild, um das Ausgabebild zu erstellen
-        output_frame = input_frame.copy()
-
-        # Bestimme die Schriftgröße und -dicke
-        font_scale = 1
-        thickness = 2
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        text_color = (255, 255, 255)
-        if self.segmentation:
-            text_color = (0, 0, 0)
-
-        # Bestimme die Länge des längsten Textes
-        max_text_length = max(
-            cv2.getTextSize(poses[num], cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0][0] for num in range(len(poses)))
-
-        # Schleife über alle Posen und Wahrscheinlichkeiten
-        for num, prob in enumerate(res):
-            # Berechne die Höhe des Textes
-            text_size = cv2.getTextSize(poses[num], font, font_scale, thickness)[0]
-            text_height = text_size[1]
-
-            # Berechne den Startpunkt des Rechtecks und Farbwert anhand der Wahrscheinlichkeit
-            y_start = start_y + num * (
-                        text_height + 10)  # Berücksichtige einen Abstand von 10 Pixeln zwischen den Rechtecken
-            color = (0, int((prob) * 255), int((1 - prob) * 255))  # BGR Format OpenCV
-
-            # Zeichne das Rechteck und den Text basierend auf der Wahrscheinlichkeit
-            cv2.rectangle(output_frame, (0, y_start - 5), (max(5, int(prob * max_text_length)), y_start + text_height),
-                          color, -1)
-            cv2.putText(output_frame, poses[num], (0, y_start + text_height - 5), font, font_scale, text_color,
-                        thickness, cv2.LINE_AA)
-
-        return output_frame
-
-
-    def show_reference_pose_probability(self, res, input_frame, reference_pose=None, y_start=10):
-        """
-        Visualisiert die Wahrscheinlichkeit der ausgewählten Referenzpose in einem Bild.
-
-        Args:
-            res (list): Eine Liste von Wahrscheinlichkeitswerten aus dem Classifier
-            reference_pose (str): Die Referenzpose, für die die Wahrscheinlichkeit angezeigt werden soll.
-            input_frame (numpy.ndarray): Das Eingabebild.
-            start_y (int, optional): Der y-Startpunkt für die Platzierung der visualisierten Posen. Defaults to 10.
-
-        Returns:
-            numpy.ndarray: Das Ausgabebild mit visualisierter Wahrscheinlichkeit für die Referenzpose.
-        """
-        # Kopiere das Eingabebild, um das Ausgabebild zu erstellen
-        output_frame = input_frame.copy()
-
-        # Bestimme die Schriftgröße und -dicke
-        font_scale = 1
-        thickness = 2
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        text_color = (255, 255, 255)
-        if self.segmentation:
-            text_color = (0, 0, 0)
-
-        # Finde den Index der Referenzpose in der Liste der Posen
-        ref_pose_index = np.where(np.array(self.trained_poses) == reference_pose)[0][0]
-        #print(ref_pose_index)
-
-        # Berechne die Höhe des Textes
-        text_size = cv2.getTextSize(reference_pose, font, font_scale, thickness)[0]
-        text_height = text_size[1]
-        color = (0, int((res[ref_pose_index]) * 255), int((1 - res[ref_pose_index]) * 255))  # BGR Format OpenCV
-
-        # Zeichne das Rechteck und den Text basierend auf der Wahrscheinlichkeit der Referenzpose
-        cv2.rectangle(output_frame, (0, y_start - 5),
-                      (max(5, int(res[ref_pose_index] * text_size[0])), y_start + text_height),
-                      color, -1)
-        cv2.putText(output_frame, reference_pose, (0, y_start + text_height - 5), font, font_scale, text_color,
-                    thickness, cv2.LINE_AA)
-
-        return output_frame
-
-
-    def process_image(self, image, results):
-        """
-        Verarbeitet ein Bild mit den Ergebnissen der Pose-Erkennung.
-
-        Args:
-            image (numpy.ndarray): Das Eingabebild.
-            results (object): Die Ergebnisse der Pose-Erkennung.
-
-        Returns:
-            numpy.ndarray: Das Ausgabebild mit visualisierten Wahrscheinlichkeiten und Posen.
-        """
-        # Wenn Pose erkannt...
-        if results.pose_landmarks:
-            # Wenn genügend Landmarks erkannt:
-            lmk_visibility = np.sum(np.array([[res.visibility] for res in results.pose_landmarks.landmark]))
-            #print(f" lmk_visibility: {lmk_visibility}")
-            if lmk_visibility > 28: # Schwellwert, um Klassifizierung anzuzeigen
-
-                # Transform Data
-                X = self.transform_data(results, *image.shape[:2])
-
-                # Predict
-                pose_class, pose_prob = self.predict(X)
-                print(pose_class, pose_prob)
-
-                # Bild horizontal spiegeln für Selfie-Ansicht
-                #if self.selfie_view:
-                #    image = cv2.flip(image, 1)
-
-                # Klasse anzeigen
-                if self.reference_pose: # statische übungen
-                    output_frame = self.show_reference_pose_probability(pose_prob, image, self.reference_pose)
-                else:
-                    output_frame = self.show_pose_classification(pose_prob, self.trained_poses, image)
-
-                # Trainer aktualisieren
-                self.pose_trainer.update(pose_class)
-                #print(self.pose_trainer.num_repeats)
-
-                output_frame_res = self.pose_trainer.show_progress(output_frame)
-
-                return output_frame_res
-
-            # Meldung anzeigen, wenn nicht genügend Landmarks erkannt
-            else:
-                text = 'Pose nicht erkannt'
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                font_scale = 2
-                font_thickness = 3
-                text_size = cv2.getTextSize(text, font, font_scale, font_thickness)[0]
-                text_x = (image.shape[1] - text_size[0]) // 2
-                #text_y = (image.shape[0] + text_size[1]) // 2
-                cv2.rectangle(image, (text_x, 100 + 5), (text_x + text_size[0], 100 - text_size[1] - 5),
-                              (0,255,255), -1)
-                cv2.putText(image, text, (text_x, 100), font, font_scale, (0,0,255),
-                            font_thickness, cv2.LINE_AA)
-
-        return image # Originalbild zurückgeben, wenn keine Landmarks erkannt wurden
-
 
 
     def close(self):

@@ -95,8 +95,6 @@ class PoseDetector:
         results = self.model.process(image_rgb)
 
         # Segmentation
-        #print(self.segmentation)
-
         if self.segmentation:
             image = self._draw_segmentation(image, results)
 
@@ -114,16 +112,30 @@ class PoseDetector:
 
         return image, results
 
-
     def _draw_segmentation(self, image, results):
-        # Draw pose segmentation.
+        """Zeichnet die Segmentierung der Pose.
+
+        Args:
+            image (numpy.ndarray): Das Eingabebild.
+            results (object): Die Ergebnisse der Pose-Erkennung.
+
+        Returns:
+            numpy.ndarray: Das Bild mit der gezeichneten Segmentierung der Pose.
+        """
+        # Kopiere das Eingabebild für die Annotierung
         annotated_image = image.copy()
+
+        # Erstelle ein Bild mit der gleichen Größe wie das Eingabebild
         red_img = np.zeros_like(annotated_image, dtype=np.uint8)
-        #red_img = np.zeros_like(image, dtype=np.uint8)
-        red_img[:, :] = (255, 255, 255)
+        red_img[:, :] = (255, 255, 255)  # Setze alle Pixel auf Weiß
+
+        # Erstelle eine 2-Klassen-Segmentierungsmaske (Hintergrund und Pose)
         segm_2class = 0.2 + 0.8 * results.segmentation_mask
-        segm_2class = np.repeat(segm_2class[..., np.newaxis], 3, axis=2)
+        segm_2class = np.repeat(segm_2class[..., np.newaxis], 3, axis=2)  # Wiederhole die Maske für alle Kanäle
+
+        # Kombiniere das Eingabebild mit der Segmentierungsmaske
         annotated_image = annotated_image * segm_2class + red_img * (1 - segm_2class)
+
         return annotated_image.astype(np.uint8)
 
 
