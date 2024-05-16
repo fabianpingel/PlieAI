@@ -77,20 +77,21 @@ class WebcamInput:
             processed_image, results = self.pose_detector.process_image(resized_image)
 
             # Verarbeitung des Bildes durch den PoseClassifier
-            # Daten transformieren
-            X, embeddings = self.pose_classifier.transform_data(results, *processed_image.shape[:2])
-            # Vorhersage
-            pose_class, pose_prob = self.pose_classifier.predict(X)
-            #print(pose_class, pose_prob)
-
-            # Verarbeitung des Bildes durch den PoseVisualizer
-            if not self.plot_3d_landmarks:
-                processed_image = self.pose_visualizer.process_image(processed_image,
-                                                                     results,
-                                                                     pose_class,
-                                                                     pose_prob,
-                                                                     embeddings)
-                #processed_image = self.pose_classifier.process_image(processed_image, results)
+            if results.pose_landmarks:
+                # Daten transformieren
+                X, embeddings = self.pose_classifier.transform_data(results, *processed_image.shape[:2])
+                # Vorhersage
+                pose_class, pose_prob = self.pose_classifier.predict(X)
+                #print(pose_class, pose_prob)
+    
+                # Verarbeitung des Bildes durch den PoseVisualizer
+                if not self.plot_3d_landmarks:
+                    processed_image = self.pose_visualizer.process_image(processed_image,
+                                                                         results,
+                                                                         pose_class,
+                                                                         pose_prob,
+                                                                         embeddings)
+                    #processed_image = self.pose_classifier.process_image(processed_image, results)
 
             # Rückgabe des verarbeiteten Bildes als VideoFrame-Objekt
             return av.VideoFrame.from_ndarray(processed_image, format="bgr24")
