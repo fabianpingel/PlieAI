@@ -1,12 +1,12 @@
 # Imports
-import av                                                   # für die Verarbeitung von Audio- und Videodaten
-import streamlit as st                                      # für die Erstellung der Streamlit-App
-from streamlit_webrtc import WebRtcMode, webrtc_streamer    # für WebRTC-Streams in Streamlit
-from modules.detector import PoseDetector                   # `PoseDetector`-Klasse für die Pose-Erkennung
-from utils.turn import get_ice_servers                      # Funktion 'get_ice_servers' aus dem Modul 'utils.turn'
-import cv2                                                  # OpenCV für die Bildverarbeitung
-from modules.classifier import PoseClassifier               # `PoseClassifier`-Klasse für die Pose-Klassifizierung
-from modules.visualizer import PoseVisualizer               # `PoseVisualizer`-Klasse für die Visualisierung
+import av                                       # für die Verarbeitung von Audio- und Videodaten
+import streamlit as st                          # für die Erstellung der Streamlit-App
+from streamlit_webrtc import WebRtcMode, webrtc_streamer  # für WebRTC-Streams in Streamlit
+from modules.detector import PoseDetector       # `PoseDetector`-Klasse für die Pose-Erkennung
+from utils.turn import get_ice_servers          # Funktion 'get_ice_servers' aus dem Modul 'utils.turn'
+import cv2                                      # OpenCV für die Bildverarbeitung
+from modules.classifier import PoseClassifier   # `PoseClassifier`-Klasse für die Pose-Klassifizierung
+from modules.visualizer import PoseVisualizer   # `PoseVisualizer`-Klasse für die Visualisierung
 import logging
 import numpy as np
 
@@ -15,6 +15,22 @@ st_webrtc_logger.setLevel(logging.WARNING)
 
 aioice_logger = logging.getLogger("aioice")
 aioice_logger.setLevel(logging.WARNING)
+
+
+class PoseResult:
+    def __init__(self):
+        self.results = None
+        self.landmarks = None
+        self.embeddings = None
+        self.pose_class = None
+        self.pose_prob = None
+
+    def __call__(self, results, landmarks, embeddings, pose_class, pose_prob):
+        self.results = results
+        self.landmarks = landmarks
+        self.embeddings = embeddings
+        self.pose_class = pose_class
+        self.pose_prob = pose_prob
 
 
 class WebcamInput:
@@ -26,24 +42,42 @@ class WebcamInput:
         """
         Initialisiert die WebcamInput-Klasse.
         """
-        # Gewähltes Klassifizierungsmodell
-        if st.session_state.exercise_type == "Ballett-Bewegungen":
-            self.classifier_model_name = getattr(st.session_state, 'dynamic')
-        else:
-            self.classifier_model_name = 'Logistic Regression'
+        # Streamlit Einstellungen initialisieren
+        self._initialize_streamlit_settings()
 
-        #
-        self.pose_detector = PoseDetector()  # Initialisierung des PoseDetector-Objekts
+        # Initialisiert die Objekte für die Pose-Erkennung, -Klassifizierung und -Visualisierung.
+        # Objekt für die Pose-Erkennung initialisieren
+        self.pose_detector = PoseDetector()
+        # Objekt für die Pose-Klassifizierung initialisieren
         self.pose_classifier = PoseClassifier(self.classifier_model_name)
+        # Objekt für die Pose-Visualisierung initialisieren
         self.pose_visualizer = PoseVisualizer(self.pose_classifier.trained_poses)
 
-        self.image_size = float(getattr(st.session_state, 'image_size', 100) / 100)
-        self.plot_3d_landmarks = getattr(st.session_state, 'plot_3d_landmarks', False)
-        self.selfie_view = getattr(st.session_state, 'selfie', False)
+        # Klasse für Pose-Ergebisse
+        self.pose_result = PoseResult()
 
         # Logging
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.WARNING)
+
+    def _initialize_streamlit_settings(self) -> None:
+        """
+        Initialisiert die Streamlit-Einstellungen für die Anwendung.
+
+        Diese Methode liest die Einstellungen aus der Streamlit-Sitzungszustandvariablen und initialisiert entsprechende
+        Klassenvariablen für die Anwendung.
+
+        Returns:
+            None
+        """
+        self.image_size = float(getattr(st.session_state, 'image_size', 100) / 100)
+        self.selfie_view = getattr(st.session_state, 'selfie', False)
+
+        # Klassifizierungsmodell
+        if st.session_state.exercise_type == "Ballett-Bewegungen":
+            self.classifier_model_name = getattr(st.session_state, 'dynamic')
+        else:
+            self.classifier_model_name = 'Logistic Regression'
 
     def __del__(self):
         # Freigeben der Ressourcen
@@ -79,19 +113,21 @@ class WebcamInput:
             # Verarbeitung des Bildes durch den PoseClassifier
             if results.pose_landmarks:
                 # Daten transformieren
-                X, embeddings = self.pose_classifier.transform_data(results, *processed_image.shape[:2])
+                X, self.pose_result.embeddings = self.pose_classifier.transform_data(results, *processed_image.shape[:2])
                 # Vorhersage
-                pose_class, pose_prob = self.pose_classifier.predict(X)
-                #print(pose_class, pose_prob)
-    
+                self.pose_result.pose_class, self.pose_result.pose_prob = self.pose_classifier.predict(X)
+                # print(pose_class, pose_prob)
+
+                # Ergebnisse
+                self.pose_result.results = results
+
                 # Verarbeitung des Bildes durch den PoseVisualizer
-                if not self.plot_3d_landmarks:
-                    processed_image = self.pose_visualizer.process_image(processed_image,
-                                                                         results,
-                                                                         pose_class,
-                                                                         pose_prob,
-                                                                         embeddings)
-                    #processed_image = self.pose_classifier.process_image(processed_image, results)
+                #processed_image = self.pose_visualizer.process_image(processed_image,
+                self.pose_visualizer.process_image(processed_image,
+                                                    self.pose_result.results,
+                                                    self.pose_result.pose_class,
+                                                    self.pose_result.pose_prob,
+                                                    self.pose_result.embeddings)
 
             # Rückgabe des verarbeiteten Bildes als VideoFrame-Objekt
             return av.VideoFrame.from_ndarray(processed_image, format="bgr24")

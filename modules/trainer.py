@@ -1,5 +1,5 @@
-import time
 import cv2
+import numpy as np
 import streamlit as st
 
 
@@ -44,7 +44,8 @@ class PoseTransitionCounter(object):
 
 
 class Trainer:
-    def __init__(self):
+    def __init__(self, threshold=0.8):
+        self._threshold = threshold
         self.exercise_type = st.session_state.exercise_type
         if self.exercise_type == "Statische Posen":
             self.target_pose = st.session_state.pose
@@ -60,8 +61,6 @@ class Trainer:
         self.fps = 10
         self.count = 0
 
-        self.success_message_shown = False
-        self.success_message_start_time = None
 
 
 
@@ -69,9 +68,9 @@ class Trainer:
         return self.target_pose == pred_pose
 
 
-    def update(self, pred_pose):
+    def update(self, pred_pose, pred_prob):
         if self.exercise_type == "Statische Posen":
-            if self.check_pose(pred_pose):
+            if self.check_pose(pred_pose) and pred_prob >= self._threshold:
                 self.count += 1
                 self.num_repeats = self.count // self.fps  # Sekunden durch Anzahl der Frames pro Sekunde berücksichtigt
         else:
@@ -81,46 +80,12 @@ class Trainer:
                 self.num_repeats = int(self.count // 2)
                 #print("Anzahl der Wechsel:", self.num_repeats)
 
+    def reset(self):
+        """Setzt den Trainer in den Ausgangszustand zurück."""
+        self.success = False
+        self.num_repeats = 0
+        self.count = 0
 
-    #@staticmethod
-    def show_progress(self, frame):
-
-        # Kopiere das Eingabebild, um das Ausgabebild zu erstellen
-        output_frame = frame.copy()
-
-        # Bestimme die Schriftgröße und -dicke
-        font_scale = 1
-        thickness = 2
-        font = cv2.FONT_HERSHEY_SIMPLEX
-
-        # Fortschrittsbalken anzeigen
-        frame_height, frame_width = frame.shape[:2]
-        progress = min(frame_width, int(frame_width / 10) * self.num_repeats)
-        cv2.rectangle(output_frame, (0, frame_height-20), (max(1,progress), frame_height-40), (76, 177, 34), -1)
-
-        # Wenn Übung beendet zeige Erfolgsmeldung
-        #if self.num_repeats >= 10 and not self.success_message_shown:
-        if self.num_repeats >= 10:
-            #text1 = "Herzlichen Glueckwunsch!"
-            text2 = "Du hast die Uebung erfolgreich gemeistert!"
-            #cv2.putText(output_frame, text1, (10, frame_height-40), font, font_scale, (255, 255, 255),
-            #            thickness, cv2.LINE_AA)
-            cv2.putText(output_frame, text2, (10, frame_height-20), font, font_scale, (255, 255, 255),
-                        thickness, cv2.LINE_AA)
-
-            # Merke dir den Startzeitpunkt der Erfolgsmeldung
-            self.success_message_start_time = time.time()
-            # Setze den Flag für die Erfolgsmeldung
-            #self.success_message_shown = True
-
-        # Wenn die Erfolgsmeldung gezeigt wurde und 3 Sekunden vergangen sind
-        if self.success_message_shown and time.time() - self.success_message_start_time >= 3:
-            # Setze den Flag zurück und lösche den Startzeitpunkt
-            self.success_message_shown = False
-            self.success_message_start_time = None
-
-
-        return output_frame
 
 
 

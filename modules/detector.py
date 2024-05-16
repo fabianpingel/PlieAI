@@ -53,12 +53,8 @@ class PoseDetector:
             min_tracking_confidence (float): Minimale Konfidenz für das Tracking von Objekten über Frames hinweg.
         """
 
-        # Option zum Zeichnen von Landmarks abhängig vom Streamlit-Session-Zustand
-        self.show_face_landmarks = getattr(st.session_state, 'face_landmarks', False)
-        self.show_hand_landmarks = getattr(st.session_state, 'hand_landmarks', False)
-        self.show_pose_landmarks = getattr(st.session_state, 'pose_landmarks', False)
-        self.plot_3d_landmarks = getattr(st.session_state, 'plot_3d_landmarks', False)
-        self.segmentation = getattr(st.session_state, 'segmentation', False)
+        # Streamlit Einstellungen initialisieren
+        self._initialize_streamlit_settings()
 
         # Modell erzeugen
         self.model = mp_holistic.Holistic(
@@ -75,6 +71,20 @@ class PoseDetector:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.WARNING) # Log-Level auf erforderliches Niveau setzen
 
+    def _initialize_streamlit_settings(self) -> None:
+        """
+        Initialisiert die Streamlit-Einstellungen für die Anwendung.
+
+        Diese Methode liest die Einstellungen aus der Streamlit-Sitzungszustandvariablen und initialisiert entsprechende
+        Klassenvariablen für die Anwendung.
+
+        Returns:
+            None
+        """
+        self.show_face_landmarks = getattr(st.session_state, 'face_landmarks', False)
+        self.show_hand_landmarks = getattr(st.session_state, 'hand_landmarks', True)
+        self.show_pose_landmarks = getattr(st.session_state, 'pose_landmarks', True)
+        self.segmentation = getattr(st.session_state, 'segmentation', False)
 
     def process_image(self, image):
         """
@@ -94,21 +104,16 @@ class PoseDetector:
         # Verarbeite das Bild mit dem Holistic-Modell
         results = self.model.process(image_rgb)
 
-        # Segmentation
-        if self.segmentation:
-            image = self._draw_segmentation(image, results)
-
-        # Zeichne Landmarks im Bild, wenn aktiviert und vorhanden
         if results:
+            # Zeichne Segmentierungsmaske
+            if self.segmentation:
+                image = self._draw_segmentation(image, results)
+
+            # Zeichne Landmarks im Bild, wenn aktiviert und vorhanden
             self._draw_keypoints(image, results)
-        #print(f'Processed shape: {image.shape}')
-        #bildformat = str(image.shape)
-        #cv2.putText(image, bildformat, (200, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA)
-
-        # Erstelle den 3D-Plot der Landmarks, wenn aktiviert
-        if self.plot_3d_landmarks:
-            image = self._plot_landmarks_3d(results)
-
+            #print(f'Processed shape: {image.shape}')
+            #bildformat = str(image.shape)
+            #cv2.putText(image, bildformat, (200, 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 1, cv2.LINE_AA)
 
         return image, results
 
@@ -130,7 +135,7 @@ class PoseDetector:
         red_img[:, :] = (255, 255, 255)  # Setze alle Pixel auf Weiß
 
         # Erstelle eine 2-Klassen-Segmentierungsmaske (Hintergrund und Pose)
-        segm_2class = 0.2 + 0.8 * results.segmentation_mask
+        segm_2class = 0.1 + 0.9 * results.segmentation_mask
         segm_2class = np.repeat(segm_2class[..., np.newaxis], 3, axis=2)  # Wiederhole die Maske für alle Kanäle
 
         # Kombiniere das Eingabebild mit der Segmentierungsmaske
@@ -168,33 +173,6 @@ class PoseDetector:
                     results.pose_landmarks,
                     mp_holistic.POSE_CONNECTIONS,
                     landmark_drawing_spec=mp_drawing_styles.get_default_pose_landmarks_style())
-
-    @staticmethod
-    def _plot_landmarks_3d(results):
-        """
-        Erstellt einen 3D-Plot der erkannten Landmarks.
-
-        Args:
-            results: Die Ergebnisse der Holistic-Verarbeitung.
-        """
-        if results.pose_landmarks:
-            mp_drawing.plot_landmarks(
-                results.pose_world_landmarks,
-                mp_holistic.POSE_CONNECTIONS)
-
-            # Speichere den Plot in einer temporären Datei
-            temp_file = 'temp_plot.png'
-            plt.savefig(temp_file)
-            # Plot schließen, um Ressourcen freizugeben
-            plt.close()
-
-            # Lese das Bild aus der temporären Datei ein
-            plot_image = cv2.imread(temp_file)
-
-            # Lösche die temporäre Datei
-            os.remove(temp_file)
-
-            return plot_image
 
     def close(self):
         """

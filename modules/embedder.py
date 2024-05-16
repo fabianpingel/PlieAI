@@ -33,7 +33,7 @@ class PoseEmbedder(object):
             'left_foot_index', 'right_foot_index',
         ]
 
-    def __call__(self, landmarks):
+    def __call__(self, landmarks: np.ndarray) -> np.ndarray:
         """Normalisiert Pose-Landmarken und wandelt sie in Einbettungen um.
 
         Args:
@@ -56,8 +56,18 @@ class PoseEmbedder(object):
 
         return landmarks
 
-    def _normalize_pose_landmarks(self, landmarks):
-        """Normalizes landmarks translation and scale."""
+    def _normalize_pose_landmarks(self, landmarks: np.ndarray) -> np.array:
+        """Normalisiert Translation und Skalierung der Landmarken.
+
+        Die Translation und Skalierung der übergebenen Landmarken werden basierend auf dem Torso-Größenmultiplikator normalisiert.
+        Die Landmarken werden zum Pose-Zentrum verschoben und dann auf eine konstante Größe skaliert, die durch den Torso-Größenmultiplikator bestimmt wird.
+
+        Args:
+            landmarks (np.ndarray): Ein NumPy-Array der Form (N, 3) mit den 3D-Landmarken.
+
+        Returns:
+            np.ndarray: Ein NumPy-Array der Form (N, 3) mit den normalisierten Pose-Landmarken.
+        """
         landmarks = np.copy(landmarks)
 
         # Verschieben ins Pose-Zentrum auf (0,0)
@@ -73,7 +83,10 @@ class PoseEmbedder(object):
 
         return landmarks
 
-    def _get_center_point(self, landmarks, left_bodypart, right_bodypart):
+    def _get_center_point(self,
+                          landmarks: np.ndarray,
+                          left_bodypart: str,
+                          right_bodypart: str) -> np.ndarray:
         """
         Berechnet den Mittelpunkt der beiden angegebenen Landmarken.
 
@@ -95,12 +108,17 @@ class PoseEmbedder(object):
 
         return center
 
-    def _get_pose_size(self, landmarks, torso_size_multiplier):
+    def _get_pose_size(self,
+                       landmarks: np.ndarray,
+                       torso_size_multiplier: float) -> float:
         """Berechnet die Größe der Pose.
 
         Es ist das Maximum von zwei Werten:
         * Torsogröße multipliziert mit `torso_size_multiplier`
         * Maximaler Abstand vom Posenmittelpunkt zu einer beliebigen Posenmarkierung
+
+        Returns:
+            float: Die berechnete Größe der Pose.
         """
 
         # Bei diesem Ansatz werden nur die 2D-Koordinaten zur Berechnung der Posengröße verwendet.

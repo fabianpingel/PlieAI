@@ -1,6 +1,6 @@
 import os
 import pickle
-import pandas as pd ###
+import pandas as pd
 import numpy as np
 import cv2
 import streamlit as st
@@ -36,8 +36,6 @@ class PoseClassifier:
         # Pose Embeddings initialisieren
         self.pose_embedder = PoseEmbedder()
 
-
-
     def load_model(self, model_name):
         """
         Laden des Modells aus einer Datei mit pickle.
@@ -52,8 +50,6 @@ class PoseClassifier:
             self.logger.info("Modell erfolgreich geladen.")
         except Exception as e:
             self.logger.error(f"Fehler beim Laden des Modells: {e}")
-
-
 
     def create_feature_names(self):
         """
@@ -97,18 +93,17 @@ class PoseClassifier:
         if results.pose_landmarks:
             pose = np.array([[res.x, res.y, res.z] for res in results.pose_landmarks.landmark])
 
-        # Pose in absolute Werte umrechnen)
+        # Pose in absolute Werte umrechnen
         pose *= np.array([width, height, 1])
-        #pose *= np.array([width, height, width])
+        # pose *= np.array([width, height, width])
 
         # Embeddings erzeugen
         embeddings = self.pose_embedder(pose)
         # Landmarks in Vektor umwandeln
-        #embeddings = embeddings.flatten().tolist()
+        # embeddings = embeddings.flatten().tolist()
 
-        #return pd.DataFrame([embeddings], columns=self.columns)
+        # return pd.DataFrame([embeddings], columns=self.columns)
         return pd.DataFrame([embeddings.flatten().tolist()], columns=self.columns), embeddings
-
 
     def predict(self, X):
         """
@@ -131,7 +126,6 @@ class PoseClassifier:
             self.logger.error("Kein Modell geladen, Vorhersage nicht möglich.")
             return None
 
-
     def close(self):
         """
         Schließt das Modell und gibt Ressourcen frei.
@@ -144,5 +138,3 @@ class PoseClassifier:
             self.logger.info("Modell geschlossen.")
         else:
             self.logger.error("Kann Ressource nicht freigeben, da kein Modell geladen.")
-
-
