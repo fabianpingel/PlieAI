@@ -46,17 +46,17 @@ def main():
 
         # Toggle für Anzeige der Landmarks
         with st.expander("Einstellungen"):
-            st.toggle("Face Landmarks", value=True, key='face_landmarks')
-            st.toggle("Hand Landmarks", value=True, key='hand_landmarks')
-            st.toggle("Pose Landmarks", value=True, key='pose_landmarks')
-            st.checkbox("Selfie-Ansicht", value=False, key='selfie')
-            st.checkbox("Freischneiden", value=False, key='segmentation')
-            # st.checkbox("3D Pose Landmarks", value=False, key='plot_3d_landmarks')  # Toggle sorgt für Flimmern der Streamlit-Oberfläche
-            st.select_slider('Bildqualität', options=list(range(100, 201, 50)), value=150, key='image_size')
+            #st.toggle("Face Landmarks", value=True, key='face_landmarks')
+            #st.toggle("Hand Landmarks", value=True, key='hand_landmarks')
+            #st.toggle("Pose Landmarks", value=True, key='pose_landmarks')
+            st.toggle("Selfie-Ansicht", value=False, key='selfie')
+            st.toggle("Hintergrund entfernen", value=False, key='segmentation')
+            st.toggle("Pose Abweichungen", value=True, key='deviation')
+            st.select_slider('Größe in %', options=list(range(100, 201, 50)), value=150, key='image_size')
 
         # Copyright und Version
         copyright = "© 2024 Fabian Pingel"
-        version = "Beta-Version 1.3"
+        version = "Beta-Version 1.4"
 
         # Sidebar
         st.sidebar.markdown(f"{copyright}\n{version}")
@@ -64,7 +64,7 @@ def main():
     # Hauptfenster
     st.title("🩰 Plié AI")
     st.subheader("Pose Learning and Improvement Exercises with AI")
-    #st.markdown("🚧 11.05.2024 - Dynamische Posen sind zur Hälfte drin... 🚧")
+    st.markdown("🥳 16.05.2024 - Prototyp bereit zum Testen... 🎉")
 
     # Webcam-Input
     input_handler = WebcamInput()
