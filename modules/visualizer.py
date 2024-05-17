@@ -226,7 +226,7 @@ class PoseVisualizer:
 
         # Farben und Größen für Pfeile und Kreise berechnen
         colors = self._get_color_values(distance)
-        sizes = np.maximum(5, np.round(20 * distance / np.max(distance)).astype(int))
+        sizes = np.maximum(2, np.round(10 * distance / np.max(distance)).astype(int))
 
         # Konvertierung von Float zu Int für OpenCV
         x, y = np.int32(x), np.int32(y)
