@@ -80,7 +80,8 @@ class PoseVisualizer:
         self.font = cv2.FONT_HERSHEY_SIMPLEX
         self.font_scale = 1.5
         self.font_thickness = 2
-        self.text_color = (0, 0, 0) if self.segmentation else (255, 255, 255)
+        #self.text_color = (0, 0, 0) if self.segmentation else (255, 255, 255) # schwarz / weiß
+        self.text_color = (0, 0, 0) if self.segmentation else (255, 0, 0)  # schwarz / blau
 
     @staticmethod
     def _load_reference_pose_embedding(reference_pose: str) -> np.ndarray:
