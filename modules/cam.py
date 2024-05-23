@@ -187,7 +187,7 @@ class WebcamInput:
         """
         # Ermöglicht dem Benutzer das Hochladen eines Videos
         uploaded_video = st.file_uploader('Video auswählen',
-                                          type=['.mp4'],
+                                          type=['.mp4', '.mov'],
                                           accept_multiple_files=False,
                                           key='vid_file',
                                           help="Hier kann ein Video zur Analyse ausgewählt werden.")
