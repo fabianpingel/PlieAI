@@ -104,6 +104,7 @@ class PoseDetector:
         # Verarbeite das Bild mit dem Holistic-Modell
         results = self.model.process(image_rgb)
 
+        #print('Bis hierhin')
         if results.pose_landmarks:
             # Zeichne Segmentierungsmaske
             if self.segmentation:

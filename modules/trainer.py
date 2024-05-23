@@ -72,6 +72,7 @@ class Trainer:
         if self.exercise_type == "Statische Posen":
             if self.check_pose(pred_pose) and pred_prob >= self._threshold:
                 self.count += 1
+                #print(f'Count: {self.count}')
                 self.num_repeats = self.count // self.fps  # Sekunden durch Anzahl der Frames pro Sekunde berücksichtigt
         else:
             # Prüfen, dass nur gewollte Posen gezählt werden

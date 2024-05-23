@@ -35,7 +35,7 @@ class PoseVisualizer:
         self.pose_trainer = Trainer()
 
         # OpenCV Einstellungen initialisieren
-        self._initialize_opencv_settings()
+        self._initialize_opencv_settings(self.text_color_hex)
 
         # Sonstige
         self.success_message_start_time = None
@@ -54,6 +54,7 @@ class PoseVisualizer:
         self.segmentation = getattr(st.session_state, 'segmentation', False)
         # Pose Abweichungen anzeigen
         self.deviation = getattr(st.session_state, 'deviation', True)
+        self.text_color_hex = getattr(st.session_state, 'text_color')
 
         # Überprüfen, ob "Statische Posen" ausgewählt wurden
         if st.session_state.exercise_type == "Statische Posen":
@@ -65,7 +66,25 @@ class PoseVisualizer:
             self.reference_pose = None
             self.reference_pose_embedding = None
 
-    def _initialize_opencv_settings(self) -> None:
+    def _convert_Hex2RGB(self, text_color_hex: str):
+        """
+        Konvertiert einen Hex-Farbstring in einen RGB-Farb-Tupel.
+
+        Args:
+            text_color_hex (str): Der Hex-Farbstring, z.B. "#RRGGBB".
+
+        Returns:
+            Tuple[int, int, int]: Ein Tupel mit den RGB-Werten (0-255).
+        """
+        # Entfernt das "#" am Anfang des Hex-Farbstrings
+        text_color_hex = text_color_hex.lstrip('#')
+        # Teilt den Hex-Farbstring in R, G und B Komponenten auf
+        r, g, b = int(text_color_hex[0:2], 16), int(text_color_hex[2:4], 16), int(text_color_hex[4:6], 16)
+
+        return b, g, r
+
+
+    def _initialize_opencv_settings(self, text_color_hex) -> None:
         """
         Initialisiert die OpenCV-Einstellungen für die Textanzeige.
 
@@ -81,7 +100,7 @@ class PoseVisualizer:
         self.font_scale = 1.5
         self.font_thickness = 2
         #self.text_color = (0, 0, 0) if self.segmentation else (255, 255, 255) # schwarz / weiß
-        self.text_color = (0, 0, 0) if self.segmentation else (255, 0, 0)  # schwarz / blau
+        self.text_color = (0, 0, 0) if self.segmentation else self._convert_Hex2RGB(text_color_hex)  # schwarz / blau
 
     @staticmethod
     def _load_reference_pose_embedding(reference_pose: str) -> np.ndarray:
@@ -115,10 +134,11 @@ class PoseVisualizer:
         """
         # Bestimme die Länge des längsten Textes
         max_text_length = max(
-            cv2.getTextSize(poses[num], self.font, 1, 2)[0][0] for num in range(len(poses)))
+            cv2.getTextSize(poses[num], self.font, self.font_scale+1, self.font_thickness)[0][0] for num in range(len(poses)))
 
         # Schleife über alle Posen und Wahrscheinlichkeiten
         for num, prob in enumerate(res):
+            print(prob)
             # Berechne die Höhe des Textes
             text_size = cv2.getTextSize(poses[num], self.font, self.font_scale+1, self.font_thickness)[0]
             text_height = text_size[1]
@@ -126,7 +146,7 @@ class PoseVisualizer:
             # Berechne den Startpunkt des Rechtecks und Farbwert anhand der Wahrscheinlichkeit
             y_start = start_y + num * (
                     text_height + 10)  # Berücksichtige einen Abstand von 10 Pixeln zwischen den Rechtecken
-            color = (0, int((prob) * 255), int((1 - prob) * 255))  # BGR Format OpenCV
+            color = (0, int(prob * 255), int((1 - prob) * 255))  # BGR Format OpenCV
 
             # Zeichne das Rechteck und den Text basierend auf der Wahrscheinlichkeit
             cv2.rectangle(image, (0, y_start - 5), (max(5, int(prob * max_text_length)), y_start + text_height),
@@ -224,10 +244,15 @@ class PoseVisualizer:
 
         # Distanz zwischen den aktuellen und Referenz-Embeddings berechnen
         distance = np.linalg.norm(displacement_vector, axis=1)
+        print(f'Dist: {sum(distance)}')
+        max_dist = len(distance) * np.sqrt(1) # x,y,z
+        print(max_dist)
+
+        print(f'Genauigkeit: {(1 - (sum(distance)/max_dist)) * 100}')
 
         # Farben und Größen für Pfeile und Kreise berechnen
         colors = self._get_color_values(distance)
-        sizes = np.maximum(2, np.round(10 * distance / np.max(distance)).astype(int))
+        sizes = np.maximum(2, np.round(10 * distance / np.max(distance)).astype(int)) # Min/Max Wert der Kreise
 
         # Konvertierung von Float zu Int für OpenCV
         x, y = np.int32(x), np.int32(y)
@@ -364,11 +389,14 @@ class PoseVisualizer:
             ref_pose_prob = float(pose_prob[ref_pose_index])
 
             # Klassifizierung anzeigen
-            self.show_reference_pose_probability(pose_prob, image, self.reference_pose)
+            #self.show_reference_pose_probability(pose_prob, image, self.reference_pose)
 
             # Poseabweichungen anzeigen
             if self.deviation:
                 self.draw_pose_deviation(image, landmarks, self.reference_pose_embedding, embeddings_array)
+
+            # Klassifizierung anzeigen
+            self.show_reference_pose_probability(pose_prob, image, self.reference_pose)
 
         # dynamische Übungen
         else:

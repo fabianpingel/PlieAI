@@ -10,6 +10,10 @@ from modules.visualizer import PoseVisualizer   # `PoseVisualizer`-Klasse für d
 import logging
 import numpy as np
 
+from aiortc.contrib.media import MediaPlayer
+import tempfile
+
+
 st_webrtc_logger = logging.getLogger("streamlit_webrtc")
 st_webrtc_logger.setLevel(logging.WARNING)
 
@@ -60,6 +64,9 @@ class WebcamInput:
         self.logger = logging.getLogger(__name__)
         self.logger.setLevel(logging.WARNING)
 
+        # Temporär, um auch Videodateien zu streamen (für Analysezwecke)
+        self.upload_vid = None
+
     def _initialize_streamlit_settings(self) -> None:
         """
         Initialisiert die Streamlit-Einstellungen für die Anwendung.
@@ -83,7 +90,7 @@ class WebcamInput:
         # Freigeben der Ressourcen
         self.pose_detector.close()
         self.pose_classifier.close()
-        self.logger.info('Pose Detector und Classifier Ressourcen freigegeben.')
+
 
     def video_frame_callback(self, frame: av.VideoFrame) -> av.VideoFrame:
         """Callback-Funktion für jedes empfangene Video-Frame.
@@ -155,4 +162,57 @@ class WebcamInput:
         )
 
         if not webrtc_ctx.state.playing:
-            st.warning("Warte auf Video-Stream...")  # Anzeige einer Warnung, wenn kein Video-Stream vorhanden ist
+            st.warning("Warte auf Live-Stream...")  # Anzeige einer Warnung, wenn kein Video-Stream vorhanden ist
+            st.info("Mit 'SELECT DEVICE' kann die Kamera ausgewählt werden.")
+            st.info("Auf 'START' klicken, um mit der Übung zu beginnen...")
+
+
+
+    def create_player(self) -> MediaPlayer:
+        """
+        Erstellt einen MediaPlayer mit der URL des hochgeladenen Videos.
+
+        Returns:
+            MediaPlayer: Ein MediaPlayer-Objekt, das das Video abspielt.
+        """
+        # Gibt einen MediaPlayer zurück, der das Video von der angegebenen URL abspielt
+        return MediaPlayer(str(self.upload_vid))
+
+
+    def run_video(self) -> None:
+        """
+        Startet den WebRTC-Stream und zeigt eine Warnung an, wenn kein Video-Stream vorhanden ist.
+        Ermöglicht das Hochladen eines Videos, erstellt eine temporäre Datei und startet den Video-Stream.
+
+        """
+        # Ermöglicht dem Benutzer das Hochladen eines Videos
+        uploaded_video = st.file_uploader('Video auswählen',
+                                          type=['.mp4'],
+                                          accept_multiple_files=False,
+                                          key='vid_file',
+                                          help="Hier kann ein Video zur Analyse ausgewählt werden.")
+        st.info("Bitte 'Video' auswählen.") if not uploaded_video else None
+
+        if uploaded_video is not None:
+            with st.spinner(text="Verarbeite Video..."):
+                # Temporäre Datei erstellen und Bytes-Objekt des hochgeladenen Videos schreiben
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".mp4") as temp_file:
+                    temp_file.write(uploaded_video.getvalue())
+                    self.upload_vid= temp_file.name  # Speichert den Pfad zur temporären Datei
+
+            # Startet den WebRTC-Stream mit den angegebenen Einstellungen
+            webrtc_ctx = webrtc_streamer(
+                key="video_detection",
+                mode=WebRtcMode.RECVONLY,
+                rtc_configuration={"iceServers": get_ice_servers()},
+                video_frame_callback=self.video_frame_callback,
+                media_stream_constraints={"video": True, "audio": False},
+                player_factory=self.create_player,
+                async_processing=True,
+            )
+
+            # Zeigt eine Warnung an, wenn der Video-Stream nicht abgespielt wird
+            if not webrtc_ctx.state.playing:
+                st.warning("Warte auf Video-Stream...")
+                st.info("Auf 'START' klicken, um Video abzuspielen...")
+
