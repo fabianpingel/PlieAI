@@ -244,11 +244,11 @@ class PoseVisualizer:
 
         # Distanz zwischen den aktuellen und Referenz-Embeddings berechnen
         distance = np.linalg.norm(displacement_vector, axis=1)
-        print(f'Dist: {sum(distance)}')
+        #print(f'Dist: {sum(distance)}')
         max_dist = len(distance) * np.sqrt(1) # x,y,z
-        print(max_dist)
+        #print(max_dist)
 
-        print(f'Genauigkeit: {(1 - (sum(distance)/max_dist)) * 100}')
+        #print(f'Genauigkeit: {(1 - (sum(distance)/max_dist)) * 100}')
 
         # Farben und Größen für Pfeile und Kreise berechnen
         colors = self._get_color_values(distance)
